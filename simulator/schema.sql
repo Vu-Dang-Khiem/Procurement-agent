@@ -110,3 +110,9 @@ CREATE TABLE audit_logs (
     output     TEXT,
     ts         TEXT NOT NULL
 ) STRICT;
+
+-- Bảng kỹ thuật của đồng hồ giả lập, luôn có tối đa một dòng.
+CREATE TABLE sim_clock (
+    id  INTEGER PRIMARY KEY CHECK (id = 1),
+    now TEXT NOT NULL
+) STRICT;

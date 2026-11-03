@@ -42,6 +42,7 @@ def test_creates_all_tables(conn):
         "clarifications",
         "purchase_orders",
         "audit_logs",
+        "sim_clock",
     }
 
 

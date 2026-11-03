@@ -3,9 +3,9 @@
 | | |
 |---|---|
 | **Trạng thái** | Đang làm tuần 1, chưa có code chạy được |
-| **Phiên bản** | 1.8 |
+| **Phiên bản** | 1.9 |
 | **Cập nhật lần cuối** | 2026-11-03 |
-| **Việc tiếp theo** | Tuần 1: đồng hồ giả lập |
+| **Việc tiếp theo** | Tuần 1: dữ liệu mẫu (seed) |
 
 Đây là file duy nhất để theo dõi dự án. Mục 0 dùng để xem nhanh và giữ đúng hướng, các mục sau là thiết kế chi tiết.
 
@@ -555,6 +555,7 @@ approvals(id, request_id, task_id, level, approver_id, decision, reason, decided
 clarifications(id, request_id, task_id, question, reply_json, status, asked_at, replied_at)
 purchase_orders(id, request_id, supplier_id, amount, idempotency_key UNIQUE, status)
 audit_logs(id, task_id, request_id, actor, action, tool_name, input, output, ts)
+sim_clock(id, now)                                -- bảng kỹ thuật của đồng hồ giả lập
 ```
 
 Schema đầy đủ ở `simulator/schema.sql`. Tiền là số nguyên VND, `vat_rate` là số nguyên phần trăm, và không có cột thời gian nào mặc định lấy giờ thật. Giám đốc không thuộc phòng ban nào. Database có thêm chốt chặn cho R1 (`spent + reserved <= total`), phòng khi code quy tắc có lỗi.
@@ -632,7 +633,7 @@ Danh sách khởi đầu. Nếu eval cho thấy agent hay chọn nhầm, sẽ g�
 6. Kiểm tra không có thay đổi nào khác (closed-world)
 ```
 
-Chỉ bỏ qua các trường được khai báo trước, như `audit_logs` và `updated_at`. Mọi thay đổi ngoài dự kiến đều làm kịch bản trượt.
+Chỉ bỏ qua các trường được khai báo trước, như `audit_logs`, `updated_at` và `sim_clock`. Mọi thay đổi ngoài dự kiến đều làm kịch bản trượt.
 
 Ví dụ một kịch bản:
 
@@ -870,6 +871,7 @@ Màn hình trace cho thấy từng bước, tool đã gọi và quy tắc đã k
 | 2026-11-03 | Gửi duyệt không dừng đồ thị ngay; chỉ dừng khi agent nộp báo cáo `waiting_approval`, và chạy tiếp khi mọi yêu cầu đang chờ đã có kết quả | Nhiệm vụ nhiều yêu cầu không bị chặn ở yêu cầu đầu tiên, và agent tự quyết định có cần chờ không. Đổi lại, tốn thêm một lượt gọi LLM và yêu cầu bị từ chối sớm phải đợi các yêu cầu còn lại |
 | 2026-11-03 | Thêm `waiting_reply` và `blocked`; đổi `wait_approval` thành node chờ chung `wait_human`; thêm bảng `clarifications` | Đồ thị chờ được câu trả lời của người yêu cầu, và không phải báo `completed` khi mục tiêu không thể hoàn thành. Đổi lại, bộ chạy eval phải giả lập thêm người yêu cầu |
 | 2026-11-03 | Thêm cột `purchase_requests.proposal_json` | Tool `create_proposal` cần nơi lưu hồ sơ đề xuất, người duyệt cần xem được, và eval cần so sánh được; thiết kế trước đó chưa có chỗ lưu |
+| 2026-11-03 | Lưu đồng hồ giả lập trong bảng `sim_clock` | MCP server chạy ở tiến trình riêng nên phải thấy cùng một giờ, và giờ phải còn nguyên khi tắt chương trình rồi tiếp tục. Đổi lại, có thêm một bảng kỹ thuật mà bộ so sánh database phải bỏ qua |
 
 **Chưa áp dụng:**
 
@@ -945,3 +947,4 @@ Các bài dưới đây của bên thứ ba hoặc nhà cung cấp, chưa đối
 | 2026-11-03 | 1.6 | Đổi cách dừng chờ duyệt để xử lý được nhiều yêu cầu; thêm `goal_status` và `approvals.task_id`; ghi nhận hai vấn đề còn mở về chờ trả lời và mục tiêu không thể hoàn thành |
 | 2026-11-03 | 1.7 | Thêm trạng thái `waiting_reply` và `blocked`; đổi node chờ thành `wait_human`; thêm bảng `clarifications` và phần `human` trong kịch bản eval |
 | 2026-11-03 | 1.8 | Viết schema 10 bảng; thêm cột `proposal_json` và chốt chặn ngân sách trong database |
+| 2026-11-03 | 1.9 | Viết đồng hồ giả lập; thêm bảng kỹ thuật `sim_clock` |
