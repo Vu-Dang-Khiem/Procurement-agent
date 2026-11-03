@@ -3,9 +3,9 @@
 | | |
 |---|---|
 | **Trạng thái** | Đang làm tuần 1, chưa có code chạy được |
-| **Phiên bản** | 1.7 |
+| **Phiên bản** | 1.8 |
 | **Cập nhật lần cuối** | 2026-11-03 |
-| **Việc tiếp theo** | Tuần 1: schema 10 bảng |
+| **Việc tiếp theo** | Tuần 1: đồng hồ giả lập |
 
 Đây là file duy nhất để theo dõi dự án. Mục 0 dùng để xem nhanh và giữ đúng hướng, các mục sau là thiết kế chi tiết.
 
@@ -549,13 +549,15 @@ budgets(department_id, quarter, total, spent, reserved)
 suppliers(id, name, approved, categories, rating)
 quotations(id, supplier_id, item, unit_price, vat_rate, delivery_days,
            warranty_months, valid_until, source_file)
-purchase_requests(id, requester_id, department_id, source, extracted_json,
+purchase_requests(id, requester_id, department_id, source, extracted_json, proposal_json,
                   status, total_amount, version, created_at, updated_at)
 approvals(id, request_id, task_id, level, approver_id, decision, reason, decided_at)
 clarifications(id, request_id, task_id, question, reply_json, status, asked_at, replied_at)
 purchase_orders(id, request_id, supplier_id, amount, idempotency_key UNIQUE, status)
 audit_logs(id, task_id, request_id, actor, action, tool_name, input, output, ts)
 ```
+
+Schema đầy đủ ở `simulator/schema.sql`. Tiền là số nguyên VND, `vat_rate` là số nguyên phần trăm, và không có cột thời gian nào mặc định lấy giờ thật. Giám đốc không thuộc phòng ban nào. Database có thêm chốt chặn cho R1 (`spent + reserved <= total`), phòng khi code quy tắc có lỗi.
 
 ### 5.4 Yêu cầu với dữ liệu
 
@@ -867,6 +869,7 @@ Màn hình trace cho thấy từng bước, tool đã gọi và quy tắc đã k
 | 2026-11-03 | Thêm tool `submit_final_report`, xây từ tuần 3 | Đồ thị biết rõ lúc nào cần đối chiếu. Có từ sớm để mọi cấu hình đều nộp báo cáo, nhờ đó đo được tỷ lệ báo sai trước và sau Verification |
 | 2026-11-03 | Gửi duyệt không dừng đồ thị ngay; chỉ dừng khi agent nộp báo cáo `waiting_approval`, và chạy tiếp khi mọi yêu cầu đang chờ đã có kết quả | Nhiệm vụ nhiều yêu cầu không bị chặn ở yêu cầu đầu tiên, và agent tự quyết định có cần chờ không. Đổi lại, tốn thêm một lượt gọi LLM và yêu cầu bị từ chối sớm phải đợi các yêu cầu còn lại |
 | 2026-11-03 | Thêm `waiting_reply` và `blocked`; đổi `wait_approval` thành node chờ chung `wait_human`; thêm bảng `clarifications` | Đồ thị chờ được câu trả lời của người yêu cầu, và không phải báo `completed` khi mục tiêu không thể hoàn thành. Đổi lại, bộ chạy eval phải giả lập thêm người yêu cầu |
+| 2026-11-03 | Thêm cột `purchase_requests.proposal_json` | Tool `create_proposal` cần nơi lưu hồ sơ đề xuất, người duyệt cần xem được, và eval cần so sánh được; thiết kế trước đó chưa có chỗ lưu |
 
 **Chưa áp dụng:**
 
@@ -941,3 +944,4 @@ Các bài dưới đây của bên thứ ba hoặc nhà cung cấp, chưa đối
 | 2026-11-03 | 1.5 | Ghi thiết kế đồ thị LangGraph; tách node `wait_approval`; thêm tool `submit_final_report` (tổng 23 tool); ghi nhận vấn đề chờ duyệt với nhiều yêu cầu |
 | 2026-11-03 | 1.6 | Đổi cách dừng chờ duyệt để xử lý được nhiều yêu cầu; thêm `goal_status` và `approvals.task_id`; ghi nhận hai vấn đề còn mở về chờ trả lời và mục tiêu không thể hoàn thành |
 | 2026-11-03 | 1.7 | Thêm trạng thái `waiting_reply` và `blocked`; đổi node chờ thành `wait_human`; thêm bảng `clarifications` và phần `human` trong kịch bản eval |
+| 2026-11-03 | 1.8 | Viết schema 10 bảng; thêm cột `proposal_json` và chốt chặn ngân sách trong database |
