@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Trạng thái** | Đã có thiết kế, chưa viết code |
+| **Trạng thái** | Đang làm tuần 1, chưa có code chạy được |
 | **Phiên bản** | 1.7 |
 | **Cập nhật lần cuối** | 2026-11-03 |
-| **Việc tiếp theo** | Tuần 1: môi trường doanh nghiệp giả lập |
+| **Việc tiếp theo** | Tuần 1: schema 10 bảng |
 
 Đây là file duy nhất để theo dõi dự án. Mục 0 dùng để xem nhanh và giữ đúng hướng, các mục sau là thiết kế chi tiết.
 
