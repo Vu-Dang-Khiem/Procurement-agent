@@ -13,3 +13,6 @@ __pycache__/
 *.db
 *.sqlite
 *.sqlite3
+
+# Ghi chú cá nhân, không đẩy lên GitHub
+*.local.md

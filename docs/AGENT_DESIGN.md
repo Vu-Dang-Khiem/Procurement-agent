@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Trạng thái** | Xong tuần 1 (công ty giả lập), chưa có agent |
-| **Phiên bản** | 1.11 |
+| **Phiên bản** | 1.12 |
 | **Cập nhật lần cuối** | 2026-11-04 |
 | **Việc tiếp theo** | Tuần 2: quy tắc R1–R8, MCP server, LLM cách ly |
 
@@ -453,6 +453,7 @@ Các con số này là điểm khởi đầu, sẽ chỉnh theo dữ liệu eval
 ### 4.7 Context
 
 - Giữ phần đầu prompt ổn định, chỉ thêm vào cuối, tuần tự hóa JSON theo thứ tự cố định (`sort_keys=True`).
+- Bật prompt cache khi chạy model thật. Cache mặc định hết hạn sau 5 phút không dùng, nên lần gọi đầu sau khi chờ người có thể phải ghi lại cache. Việc này tốn thêm một ít nhưng không gây lỗi. Cách bật qua `langchain-anthropic` cần kiểm tra lại khi viết code.
 - Giới hạn kích thước output của tool. Phần lớn lưu ngoài context và lấy lại bằng `ref`.
 - Giữ lại các lỗi và cách đã xử lý.
 
@@ -886,6 +887,8 @@ Màn hình trace cho thấy từng bước, tool đã gọi và quy tắc đã k
 | Harness tự tiến hóa | Vẫn đang nghiên cứu | Sau v1 |
 | Memory, nén context | Chưa có bằng chứng là cần | Xem xét ở tuần 7, theo điều kiện ở mục 7.5 |
 | Xoay vòng nhiều gói miễn phí để chạy cả dự án | Hạn mức quá thấp, kết quả eval khó so sánh, chỉ tiết kiệm khoảng 10–25 USD | Vẫn được dùng một model miễn phí để debug |
+| Batch API | Agent cần kết quả ngay ở mỗi bước nên không hợp | Có thể cân nhắc khi chấm LLM cách ly |
+| Nhiều nhà cung cấp model | Phải xử lý thêm khác biệt về API và eval riêng cho từng model | Khi số liệu cho thấy một model khác đáng dùng |
 | Retriever, vector search | Quy định chỉ có 8 quy tắc và đã nằm trong code | Khi eval cho thấy agent cần trích dẫn văn bản chính sách. Nếu thêm thì làm tool `search_policy`, chỉ để giải thích; `check_policy` vẫn quyết định đúng sai |
 
 ## 14. Tài liệu tham khảo
@@ -953,3 +956,4 @@ Các bài dưới đây của bên thứ ba hoặc nhà cung cấp, chưa đối
 | 2026-11-03 | 1.9 | Viết đồng hồ giả lập; thêm bảng kỹ thuật `sim_clock` |
 | 2026-11-03 | 1.10 | Viết dữ liệu mẫu bằng tay, gồm các tình huống bẫy cho quy tắc R1–R3, R5–R8 |
 | 2026-11-04 | 1.11 | Xong tuần 1: thêm 16 email, 22 PDF báo giá và đáp án trích xuất |
+| 2026-11-04 | 1.12 | Ghi rõ cách dùng prompt cache; thêm Batch API và nhiều nhà cung cấp vào danh sách chưa áp dụng |
