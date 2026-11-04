@@ -59,7 +59,7 @@ def available_budget(conn: sqlite3.Connection, department_id: int, quarter: str)
     return None if row is None else row[0]
 
 
-def _load_request(conn: sqlite3.Connection, request_id: int) -> sqlite3.Row:
+def load_request(conn: sqlite3.Connection, request_id: int) -> sqlite3.Row:
     request = conn.execute("SELECT * FROM purchase_requests WHERE id = ?", (request_id,)).fetchone()
     if request is None:
         raise NotFound(f"Không có yêu cầu #{request_id}")
@@ -142,7 +142,7 @@ def check_policy(
     conn: sqlite3.Connection, request_id: int, selected_quotation_id: int, quotation_ids: list[int]
 ) -> PolicyResult:
     """Kiểm tra một hồ sơ đề xuất, không ghi gì vào database."""
-    request = _load_request(conn, request_id)
+    request = load_request(conn, request_id)
     extracted = json.loads(request["extracted_json"] or "{}")
     item, quantity = extracted.get("item"), extracted.get("quantity")
     if item is None or quantity is None:

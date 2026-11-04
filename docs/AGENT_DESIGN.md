@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Trạng thái** | Xong tuần 1 (công ty giả lập), chưa có agent |
-| **Phiên bản** | 1.13 |
+| **Phiên bản** | 1.14 |
 | **Cập nhật lần cuối** | 2026-11-04 |
 | **Việc tiếp theo** | Tuần 2: quy tắc R1–R8, MCP server, LLM cách ly |
 
@@ -609,7 +609,11 @@ Danh sách khởi đầu. Nếu eval cho thấy agent hay chọn nhầm, sẽ g�
 | Tùy chọn | nội bộ | `remember` | Agent | Bắt buộc có `source_ref` |
 | Tùy chọn | nội bộ | `recall` | Agent | |
 
-**Quyền xem:** nhân viên xem được yêu cầu của mình và ngân sách phòng mình; trưởng phòng xem toàn phòng; Finance và giám đốc xem toàn công ty.
+**Quyền xem:** nhân viên xem được yêu cầu của mình và ngân sách phòng mình; trưởng phòng xem toàn phòng; Finance và giám đốc xem toàn công ty. Trưởng phòng Finance cũng tính là Finance.
+
+**Quyền ghi:** trước khi làm phần phân quyền ở tuần 5, ai xem được yêu cầu thì tool ghi cũng cho thao tác trên yêu cầu đó.
+
+**Trạng thái mà tool chuyển được:** `update_request` chỉ chuyển sang `IN_REVIEW`; `create_proposal` đưa yêu cầu về `IN_REVIEW`; `submit_for_approval` sang `PENDING_APPROVAL`; `create_po_draft` sang `PO_DRAFTED`. Duyệt, từ chối và hủy thuộc về con người, nên agent không có tool nào làm được.
 
 **Khi chuyển sang hệ thống thật:** `erp-mcp` đổi sang ERP, `mail-mcp` sang Gmail, `docs-mcp` sang Google Drive, không phải sửa logic agent. Nếu dùng MCP server của bên thứ ba, coi mô tả tool của họ là không đáng tin.
 
@@ -785,6 +789,7 @@ procurement-agent/
 ├── simulator/                # schema, seed, đồng hồ giả lập, email, PDF
 ├── rules/                    # R1–R8, phân quyền, chuyển trạng thái
 ├── mcp_servers/
+│   ├── common.py             # hợp đồng tool, kết nối database, audit log
 │   ├── erp/
 │   ├── mail/
 │   └── docs/
@@ -819,7 +824,7 @@ procurement-agent/
 | LLM | Claude API | Haiku 5.5 là model chính, Sonnet 5.5 để so sánh; giữ cùng API khi đổi model |
 | Agent runtime | LangGraph | Chạy bền bỉ, checkpointer, `interrupt()`, Store |
 | Tích hợp LLM | `langchain-anthropic` | LangChain chỉ là lớp tích hợp, không điều phối |
-| Tool | MCP (FastMCP), `langchain-mcp-adapters` | Tách hệ thống ngoài khỏi agent |
+| Tool | MCP (FastMCP trong `mcp==1.30.0`), `langchain-mcp-adapters` | Tách hệ thống ngoài khỏi agent. Chưa lên `mcp` 2.x vì adapter còn yêu cầu `mcp<2` |
 | Database | SQLite, có thể chuyển PostgreSQL sau | Đơn giản, dễ chụp và so sánh |
 | PDF | PyMuPDF | Đọc PDF có văn bản |
 | Backend, UI | FastAPI, Streamlit | Đủ cho demo |
@@ -846,7 +851,8 @@ Màn hình trace cho thấy từng bước, tool đã gọi và quy tắc đã k
 | Người làm dự án vừa viết agent vừa viết đề kiểm tra | Giữ riêng một bộ kiểm thử, nhờ người ngoài viết kịch bản, báo cáo rõ hạn chế |
 | Nhiều tool ghi trong một lượt gọi | Tool ghi chạy từng cái một; kiểm thử ở tuần 3; có thể tắt gọi song song khi có tool nhạy cảm |
 | Người duyệt hoặc người yêu cầu không bao giờ phản hồi | v1 chưa tự hết hạn; hủy yêu cầu thì nhiệm vụ chạy tiếp. Thêm thời hạn nếu eval cho thấy cần |
-| Truyền `actor_id` qua MCP | Kiểm chứng cách ghi đè ở tuần 3 |
+| Truyền `actor_id` qua MCP | Kiểm chứng cách ghi đè ở tuần 3, cả với `task_id` |
+| Sai kiểu tham số bị thư viện MCP chặn trước khi vào tool, nên lỗi trả về không theo hợp đồng chung | Lớp bảo vệ ở tuần 3 đổi các lỗi này sang `validation` |
 | PDF scan không có lớp văn bản | v1 chỉ hỗ trợ PDF có văn bản; quyết định về OCR hoặc đọc bằng ảnh sau |
 | Chưa có mẫu email và báo giá thật | Xem mục 0.5; nếu không xin được, báo cáo rõ hạn chế này |
 | R8 có thể cảnh báo quá nhiều: phòng IT mua nhiều mặt hàng khác nhau cùng nhóm `it` nên hay bị đánh dấu | Giữ đúng quy tắc vì đây chỉ là cảnh báo; xem lại khi eval ở tuần 4 cho thấy cảnh báo sai nhiều |
@@ -887,6 +893,9 @@ Màn hình trace cho thấy từng bước, tool đã gọi và quy tắc đã k
 | 2026-11-04 | Email mẫu nằm trong code Python, PDF báo giá được tạo từ bảng `QUOTATIONS` và commit vào repo; đáp án để riêng trong `evals/` | Báo giá và đáp án luôn khớp với dữ liệu mẫu, người đọc repo mở được PDF ngay. Đổi lại, mẫu vẫn do người làm dự án viết, chưa thay được mẫu thật |
 | 2026-11-04 | R2 đếm báo giá qua `proposal_json`, không thêm liên kết giữa `quotations` và yêu cầu | Hồ sơ đề xuất đã ghi rõ báo giá nào thuộc yêu cầu nào, nên không cần sửa schema. Báo giá vẫn được ghép với yêu cầu theo tên mặt hàng, sai tên thì trả lỗi `validation` |
 | 2026-11-04 | Trưởng phòng tự tạo yêu cầu thì giám đốc duyệt thay | R5 cấm tự duyệt nhưng chưa nói ai duyệt thay. Giám đốc là cấp trên trực tiếp. Đổi lại, giám đốc phải duyệt cả những khoản nhỏ. Đây là giả định, chưa đối chiếu với quy trình thật |
+| 2026-11-04 | Dùng `mcp==1.30.0`, không dùng `mcp` 2.x | Bản 2.x đổi `FastMCP` thành `MCPServer`, nhưng `langchain-mcp-adapters` 0.3.2 mới nhất còn yêu cầu `mcp<2`. Đổi lại, sẽ phải nâng cấp khi adapter hỗ trợ bản 2.x |
+| 2026-11-04 | Tool trả JSON gọn dạng văn bản thay vì kết quả có cấu trúc của MCP | Thứ tự khóa cố định giúp giữ prompt cache, không escape tiếng Việt và không lặp dữ liệu nên đỡ tốn token. Đổi lại, client phải tự đọc JSON |
+| 2026-11-04 | Hồ sơ vi phạm quy tắc vẫn được lưu, nhưng `submit_for_approval` kiểm tra lại và chặn | Người xem thấy được vi phạm thay vì mất hồ sơ, và ngân sách hay hạn báo giá có đổi sau đó cũng không lọt qua |
 | 2026-11-04 | Yêu cầu #17 giảm từ 3 xuống 2 máy in | Với 3 máy, tổng 21,45 triệu cần 2 báo giá nhưng chỉ có 1 báo giá máy in, nên hồ sơ luôn bị R2 chặn và bẫy R5 không bao giờ xảy ra |
 
 **Chưa áp dụng:**
@@ -970,3 +979,4 @@ Các bài dưới đây của bên thứ ba hoặc nhà cung cấp, chưa đối
 | 2026-11-04 | 1.11 | Xong tuần 1: thêm 16 email, 22 PDF báo giá và đáp án trích xuất |
 | 2026-11-04 | 1.12 | Ghi rõ cách dùng prompt cache; thêm Batch API và nhiều nhà cung cấp vào danh sách chưa áp dụng |
 | 2026-11-04 | 1.13 | Viết `rules/`: R1–R8, chọn người duyệt, phân quyền xem, chuyển trạng thái; ghi cách áp dụng quy tắc; sửa bẫy của yêu cầu #17 |
+| 2026-11-04 | 1.14 | Viết `erp-mcp` với 8 tool và hợp đồng tool chung; chốt `mcp==1.30.0`; ghi quyền ghi và các trạng thái tool được chuyển |

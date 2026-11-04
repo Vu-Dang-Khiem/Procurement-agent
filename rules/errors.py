@@ -17,3 +17,7 @@ class InvalidInput(RuleError):
 
 class PolicyViolation(RuleError):
     pass
+
+
+class PermissionDenied(RuleError):
+    pass
