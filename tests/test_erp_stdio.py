@@ -1,19 +1,13 @@
 """Chạy erp-mcp ở tiến trình riêng và gọi qua giao thức MCP thật, không cần agent."""
 
-import asyncio
 import json
-import os
-import sys
-from pathlib import Path
 
 import pytest
-from mcp import ClientSession, StdioServerParameters
-from mcp.client.stdio import stdio_client
+from mcp_session import run_session
 
-from mcp_servers.common import DB_ENV
 from simulator.seed import build_database
 
-ROOT = Path(__file__).resolve().parent.parent
+MODULE = "mcp_servers.erp.server"
 TOOLS = {
     "check_policy",
     "create_po_draft",
@@ -24,21 +18,6 @@ TOOLS = {
     "submit_for_approval",
     "update_request",
 }
-
-
-def run_session(db_path, scenario):
-    async def main():
-        params = StdioServerParameters(
-            command=sys.executable,
-            args=["-m", "mcp_servers.erp.server"],
-            env={**os.environ, DB_ENV: str(db_path)},
-            cwd=ROOT,
-        )
-        async with stdio_client(params) as (read, write), ClientSession(read, write) as session:
-            await session.initialize()
-            return await scenario(session)
-
-    return asyncio.run(main())
 
 
 @pytest.fixture
@@ -52,7 +31,7 @@ def test_lists_all_tools_with_descriptions(db_path):
     async def scenario(session):
         return (await session.list_tools()).tools
 
-    tools = run_session(db_path, scenario)
+    tools = run_session(MODULE, db_path, scenario)
     assert {tool.name for tool in tools} == TOOLS
     for tool in tools:
         assert tool.description
@@ -74,7 +53,7 @@ def test_full_flow_over_mcp(db_path):
         submitted = await call("submit_for_approval", actor_id=3, request_id=1, version=version, task_id="t1")
         return request, submitted
 
-    request, submitted = run_session(db_path, scenario)
+    request, submitted = run_session(MODULE, db_path, scenario)
     # JSON gọn, sắp xếp khóa và không escape tiếng Việt, để đỡ tốn token và giữ được cache.
     assert request.startswith('{"data":{')
     assert "Màn hình 24 inch" in request
@@ -86,7 +65,7 @@ def test_rule_error_comes_back_as_data_not_crash(db_path):
     async def scenario(session):
         return await session.call_tool("get_request", {"actor_id": 9, "request_id": 1})
 
-    result = run_session(db_path, scenario)
+    result = run_session(MODULE, db_path, scenario)
     assert result.isError is False
     assert json.loads(result.content[0].text)["error_type"] == "permission"
 
@@ -95,4 +74,4 @@ def test_wrong_argument_type_is_reported_by_mcp(db_path):
     async def scenario(session):
         return await session.call_tool("get_request", {"actor_id": "ai đó", "request_id": 1})
 
-    assert run_session(db_path, scenario).isError is True
+    assert run_session(MODULE, db_path, scenario).isError is True

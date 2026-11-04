@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Trạng thái** | Xong tuần 1 (công ty giả lập), chưa có agent |
-| **Phiên bản** | 1.14 |
+| **Phiên bản** | 1.15 |
 | **Cập nhật lần cuối** | 2026-11-04 |
 | **Việc tiếp theo** | Tuần 2: quy tắc R1–R8, MCP server, LLM cách ly |
 
@@ -896,6 +896,7 @@ Màn hình trace cho thấy từng bước, tool đã gọi và quy tắc đã k
 | 2026-11-04 | Dùng `mcp==1.30.0`, không dùng `mcp` 2.x | Bản 2.x đổi `FastMCP` thành `MCPServer`, nhưng `langchain-mcp-adapters` 0.3.2 mới nhất còn yêu cầu `mcp<2`. Đổi lại, sẽ phải nâng cấp khi adapter hỗ trợ bản 2.x |
 | 2026-11-04 | Tool trả JSON gọn dạng văn bản thay vì kết quả có cấu trúc của MCP | Thứ tự khóa cố định giúp giữ prompt cache, không escape tiếng Việt và không lặp dữ liệu nên đỡ tốn token. Đổi lại, client phải tự đọc JSON |
 | 2026-11-04 | Hồ sơ vi phạm quy tắc vẫn được lưu, nhưng `submit_for_approval` kiểm tra lại và chặn | Người xem thấy được vi phạm thay vì mất hồ sơ, và ngân sách hay hạn báo giá có đổi sau đó cũng không lọt qua |
+| 2026-11-04 | `ask_requester` không có tham số người nhận, câu hỏi được ghi vào `clarifications`, và mọi câu hỏi chưa hủy đều tính vào giới hạn 2 lần | Agent không thể gửi thư ra ngoài vì không có chỗ điền địa chỉ, thay vì phải lọc địa chỉ. Đổi lại, muốn hỏi người khác thì phải thêm tool mới |
 | 2026-11-04 | Yêu cầu #17 giảm từ 3 xuống 2 máy in | Với 3 máy, tổng 21,45 triệu cần 2 báo giá nhưng chỉ có 1 báo giá máy in, nên hồ sơ luôn bị R2 chặn và bẫy R5 không bao giờ xảy ra |
 
 **Chưa áp dụng:**
@@ -980,3 +981,4 @@ Các bài dưới đây của bên thứ ba hoặc nhà cung cấp, chưa đối
 | 2026-11-04 | 1.12 | Ghi rõ cách dùng prompt cache; thêm Batch API và nhiều nhà cung cấp vào danh sách chưa áp dụng |
 | 2026-11-04 | 1.13 | Viết `rules/`: R1–R8, chọn người duyệt, phân quyền xem, chuyển trạng thái; ghi cách áp dụng quy tắc; sửa bẫy của yêu cầu #17 |
 | 2026-11-04 | 1.14 | Viết `erp-mcp` với 8 tool và hợp đồng tool chung; chốt `mcp==1.30.0`; ghi quyền ghi và các trạng thái tool được chuyển |
+| 2026-11-04 | 1.15 | Viết `mail-mcp` với tool `ask_requester` |

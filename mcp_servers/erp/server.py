@@ -12,11 +12,20 @@ from datetime import date
 
 from mcp.server.fastmcp import FastMCP
 
-from mcp_servers.common import audit, dumps, open_db, register_tool, write_transaction
+from mcp_servers.common import (
+    audit,
+    dumps,
+    load_for_actor,
+    load_for_write,
+    open_db,
+    register_tool,
+    save_request,
+    write_transaction,
+)
 from rules import policy
 from rules.approvers import fully_approved, pick_approvers
 from rules.errors import InvalidInput, NotFound, PermissionDenied, PolicyViolation
-from rules.permissions import can_view_budget, can_view_request, load_actor
+from rules.permissions import can_view_budget, load_actor
 from rules.status import ensure_transition
 from simulator.clock import SimClock, quarter_of
 
@@ -29,34 +38,6 @@ PROPOSAL_STATUSES = ("NEW", "IN_REVIEW", "REJECTED")
 
 mcp = FastMCP("erp", log_level="WARNING")
 tool = register_tool(mcp)
-
-
-def _load_for_actor(conn: sqlite3.Connection, actor_id: int, request_id: int) -> sqlite3.Row:
-    request = policy.load_request(conn, request_id)
-    actor = load_actor(conn, actor_id)
-    if not can_view_request(actor, request["requester_id"], request["department_id"]):
-        raise PermissionDenied(f"Nhân viên #{actor_id} không có quyền với yêu cầu #{request_id}")
-    return request
-
-
-def _load_for_write(conn: sqlite3.Connection, actor_id: int, request_id: int, version: int) -> sqlite3.Row:
-    request = _load_for_actor(conn, actor_id, request_id)
-    if request["version"] != version:
-        raise InvalidInput(
-            f"Yêu cầu #{request_id} đã đổi sang version {request['version']}, bạn đang dùng version {version}",
-            "Hãy gọi get_request để xem dữ liệu mới rồi quyết định lại",
-        )
-    return request
-
-
-def _save_request(conn: sqlite3.Connection, request_id: int, **fields: object) -> int:
-    """Ghi các cột đã đổi, tăng version và trả về version mới. Tên cột chỉ đến từ code của file này."""
-    columns = "".join(f"{name} = ?, " for name in fields)
-    conn.execute(
-        f"UPDATE purchase_requests SET {columns}version = version + 1, updated_at = ? WHERE id = ?",
-        (*fields.values(), SimClock(conn).now_iso(), request_id),
-    )
-    return conn.execute("SELECT version FROM purchase_requests WHERE id = ?", (request_id,)).fetchone()[0]
 
 
 def _findings(findings: list[policy.Finding]) -> list[dict]:
@@ -82,7 +63,7 @@ def get_request(actor_id: int, request_id: int) -> dict:
     `total_amount` đã gồm VAT, `null` nghĩa là chưa có hồ sơ đề xuất.
     """
     with open_db() as conn:
-        request = _load_for_actor(conn, actor_id, request_id)
+        request = load_for_actor(conn, actor_id, request_id)
         approvals = conn.execute(
             "SELECT level, approver_id, decision, reason, decided_at FROM approvals WHERE request_id = ? ORDER BY id",
             (request_id,),
@@ -196,7 +177,7 @@ def check_policy(actor_id: int, request_id: int, selected_quotation_id: int, quo
     `violations` phải được xử lý thì mới gửi duyệt được. `flags` là dấu hiệu nghi ngờ, không chặn việc gửi duyệt.
     """
     with open_db() as conn:
-        _load_for_actor(conn, actor_id, request_id)
+        load_for_actor(conn, actor_id, request_id)
         result = policy.check_policy(conn, request_id, selected_quotation_id, quotation_ids)
     return _policy_output(result)
 
@@ -237,7 +218,7 @@ def update_request(
             raise InvalidInput(f"Ngày {needed_by!r} không hợp lệ", "Hãy dùng dạng 2026-11-30") from cause
 
     with open_db() as conn, write_transaction(conn):
-        request = _load_for_write(conn, actor_id, request_id, version)
+        request = load_for_write(conn, actor_id, request_id, version)
         if request["status"] not in EDITABLE_STATUSES:
             raise PolicyViolation(f"Không thể sửa yêu cầu đang ở trạng thái {request['status']}")
         fields: dict[str, object] = {}
@@ -250,7 +231,7 @@ def update_request(
         if status is not None:
             ensure_transition(request["status"], status)
             fields["status"] = status
-        new_version = _save_request(conn, request_id, **fields)
+        new_version = save_request(conn, request_id, **fields)
         output = {
             "request_id": request_id,
             "status": status or request["status"],
@@ -281,7 +262,7 @@ def create_proposal(
     quotation_ids = list(dict.fromkeys(quotation_ids))
 
     with open_db() as conn, write_transaction(conn):
-        request = _load_for_write(conn, actor_id, request_id, version)
+        request = load_for_write(conn, actor_id, request_id, version)
         if request["status"] not in PROPOSAL_STATUSES:
             raise PolicyViolation(f"Không thể tạo hồ sơ khi yêu cầu đang ở trạng thái {request['status']}")
         result = policy.check_policy(conn, request_id, selected_quotation_id, quotation_ids)
@@ -292,7 +273,7 @@ def create_proposal(
             "violations": _findings(result.violations),
             "flags": _findings(result.flags),
         }
-        new_version = _save_request(
+        new_version = save_request(
             conn, request_id, status="IN_REVIEW", proposal_json=dumps(proposal), total_amount=result.total_amount
         )
         output = {"request_id": request_id, "status": "IN_REVIEW", "version": new_version} | _policy_output(result)
@@ -308,7 +289,7 @@ def submit_for_approval(actor_id: int, request_id: int, version: int, task_id: s
     Sau khi gửi, yêu cầu chờ người duyệt, không thể tự chuyển sang đã duyệt. `flags` sẽ được chuyển cho người duyệt.
     """
     with open_db() as conn, write_transaction(conn):
-        request = _load_for_write(conn, actor_id, request_id, version)
+        request = load_for_write(conn, actor_id, request_id, version)
         ensure_transition(request["status"], "PENDING_APPROVAL")
         if request["proposal_json"] is None:
             raise InvalidInput(f"Yêu cầu #{request_id} chưa có hồ sơ đề xuất", "Hãy gọi create_proposal trước")
@@ -334,7 +315,7 @@ def submit_for_approval(actor_id: int, request_id: int, version: int, task_id: s
             [(request_id, task_id, level, approver_id) for level, approver_id in approvers],
         )
         proposal["violations"], proposal["flags"] = [], _findings(result.flags)
-        new_version = _save_request(
+        new_version = save_request(
             conn, request_id, status="PENDING_APPROVAL", proposal_json=dumps(proposal), total_amount=total
         )
         output = {
@@ -359,7 +340,7 @@ def create_po_draft(actor_id: int, request_id: int, version: int, task_id: str |
     """
     idempotency_key = f"req-{request_id}-v{version}"
     with open_db() as conn, write_transaction(conn):
-        request = _load_for_actor(conn, actor_id, request_id)
+        request = load_for_actor(conn, actor_id, request_id)
         existing = conn.execute(
             "SELECT o.id, o.supplier_id, s.name AS supplier, o.amount, o.status FROM purchase_orders o"
             " JOIN suppliers s ON s.id = o.supplier_id WHERE o.idempotency_key = ?",
@@ -372,7 +353,7 @@ def create_po_draft(actor_id: int, request_id: int, version: int, task_id: str |
                 "already_existed": True,
             }
 
-        request = _load_for_write(conn, actor_id, request_id, version)
+        request = load_for_write(conn, actor_id, request_id, version)
         ensure_transition(request["status"], "PO_DRAFTED")
         if not fully_approved(conn, request_id):
             raise PolicyViolation(f"Yêu cầu #{request_id} chưa được duyệt đủ các cấp")
@@ -388,7 +369,7 @@ def create_po_draft(actor_id: int, request_id: int, version: int, task_id: str |
             "INSERT INTO purchase_orders (request_id, supplier_id, amount, idempotency_key) VALUES (?, ?, ?, ?)",
             (request_id, supplier["id"], request["total_amount"], idempotency_key),
         )
-        new_version = _save_request(conn, request_id, status="PO_DRAFTED")
+        new_version = save_request(conn, request_id, status="PO_DRAFTED")
         output = {
             "id": cursor.lastrowid,
             "request_id": request_id,

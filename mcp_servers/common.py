@@ -15,6 +15,8 @@ from typing import Any
 from mcp.server.fastmcp import FastMCP
 
 from rules.errors import InvalidInput, NotFound, PermissionDenied, PolicyViolation, RuleError
+from rules.permissions import can_view_request, load_actor
+from rules.policy import load_request
 from simulator.clock import SimClock
 from simulator.db import connect
 
@@ -99,6 +101,34 @@ def write_transaction(conn: sqlite3.Connection) -> Iterator[None]:
     conn.execute("BEGIN IMMEDIATE")
     with conn:
         yield
+
+
+def load_for_actor(conn: sqlite3.Connection, actor_id: int, request_id: int) -> sqlite3.Row:
+    request = load_request(conn, request_id)
+    actor = load_actor(conn, actor_id)
+    if not can_view_request(actor, request["requester_id"], request["department_id"]):
+        raise PermissionDenied(f"Nhân viên #{actor_id} không có quyền với yêu cầu #{request_id}")
+    return request
+
+
+def load_for_write(conn: sqlite3.Connection, actor_id: int, request_id: int, version: int) -> sqlite3.Row:
+    request = load_for_actor(conn, actor_id, request_id)
+    if request["version"] != version:
+        raise InvalidInput(
+            f"Yêu cầu #{request_id} đã đổi sang version {request['version']}, bạn đang dùng version {version}",
+            "Hãy gọi get_request để xem dữ liệu mới rồi quyết định lại",
+        )
+    return request
+
+
+def save_request(conn: sqlite3.Connection, request_id: int, **fields: object) -> int:
+    """Ghi các cột đã đổi, tăng version và trả về version mới. Tên cột chỉ đến từ code của server."""
+    columns = "".join(f"{name} = ?, " for name in fields)
+    conn.execute(
+        f"UPDATE purchase_requests SET {columns}version = version + 1, updated_at = ? WHERE id = ?",
+        (*fields.values(), SimClock(conn).now_iso(), request_id),
+    )
+    return conn.execute("SELECT version FROM purchase_requests WHERE id = ?", (request_id,)).fetchone()[0]
 
 
 def audit(
