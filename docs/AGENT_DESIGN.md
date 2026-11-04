@@ -5,7 +5,7 @@
 | **Trạng thái** | Đang làm tuần 1, chưa có code chạy được |
 | **Phiên bản** | 1.10 |
 | **Cập nhật lần cuối** | 2026-11-03 |
-| **Việc tiếp theo** | Tuần 1: công cụ chụp và so sánh database |
+| **Việc tiếp theo** | Tuần 1: email và PDF mẫu |
 
 Đây là file duy nhất để theo dõi dự án. Mục 0 dùng để xem nhanh và giữ đúng hướng, các mục sau là thiết kế chi tiết.
 
