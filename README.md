@@ -2,7 +2,7 @@
 
 AI Agent xử lý công việc mua hàng nội bộ của doanh nghiệp, trong một công ty giả lập. Xây dựng bằng LangGraph và MCP.
 
-> **Trạng thái:** đã có thiết kế, chưa có code. Các phần dưới đây mô tả hệ thống đang hướng tới. Đây là dự án portfolio, không phải sản phẩm thương mại.
+> **Trạng thái:** đã xong công ty giả lập, chưa có agent. Các phần dưới đây mô tả hệ thống đang hướng tới. Đây là dự án portfolio, không phải sản phẩm thương mại.
 
 ## Vấn đề
 

@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Trạng thái** | Đang làm tuần 1, chưa có code chạy được |
-| **Phiên bản** | 1.10 |
-| **Cập nhật lần cuối** | 2026-11-03 |
-| **Việc tiếp theo** | Tuần 1: email và PDF mẫu |
+| **Trạng thái** | Xong tuần 1 (công ty giả lập), chưa có agent |
+| **Phiên bản** | 1.11 |
+| **Cập nhật lần cuối** | 2026-11-04 |
+| **Việc tiếp theo** | Tuần 2: quy tắc R1–R8, MCP server, LLM cách ly |
 
 Đây là file duy nhất để theo dõi dự án. Mục 0 dùng để xem nhanh và giữ đúng hướng, các mục sau là thiết kế chi tiết.
 
@@ -48,7 +48,7 @@ Một AI Agent nhận mục tiêu về mua hàng bằng tiếng Việt, tự l�
 
 Làm từ dưới lên. Chỉ đánh dấu khi đã đạt điều kiện hoàn thành, không đánh dấu khi mới viết xong code.
 
-- [ ] **Tuần 1, công ty giả lập:** tạo lại được dữ liệu giống hệt nhau; so sánh database phát hiện đúng thay đổi.
+- [x] **Tuần 1, công ty giả lập:** tạo lại được dữ liệu giống hệt nhau; so sánh database phát hiện đúng thay đổi.
 - [ ] **Tuần 2, tools cốt lõi:** quy tắc R1–R8, 3 MCP server gọn với 10 tool, LLM cách ly; unit test đạt và từng server chạy được khi chưa có agent.
 - [ ] **Tuần 3, bản chạy trọn vẹn đầu tiên:** một yêu cầu mua hàng đi hết từ đầu đến bản nháp đơn hàng, có duyệt và trả lời bằng dòng lệnh, xem được trace; tắt chương trình rồi tiếp tục được.
 - [ ] **Tuần 4, đo lường:** bộ eval, workflow cố định, gây lỗi tool, Langfuse; có điểm của workflow và bản A trên cùng tập nhỏ, biết chi phí mỗi lần chạy.
@@ -795,6 +795,7 @@ procurement-agent/
 │   ├── holdout/
 │   ├── runner.py
 │   ├── state_diff.py
+│   ├── extraction_answers.py   # đáp án trích xuất email và PDF
 │   ├── faults.py
 │   └── reports/
 ├── tests/
@@ -838,7 +839,7 @@ Màn hình trace cho thấy từng bước, tool đã gọi và quy tắc đã k
 | Người duyệt hoặc người yêu cầu không bao giờ phản hồi | v1 chưa tự hết hạn; hủy yêu cầu thì nhiệm vụ chạy tiếp. Thêm thời hạn nếu eval cho thấy cần |
 | Truyền `actor_id` qua MCP | Kiểm chứng cách ghi đè ở tuần 3 |
 | PDF scan không có lớp văn bản | v1 chỉ hỗ trợ PDF có văn bản; quyết định về OCR hoặc đọc bằng ảnh sau |
-| Ngân sách API, khả năng xin được mẫu thật | Xác nhận trong tuần 1; xem mục 0.5 |
+| Chưa có mẫu email và báo giá thật | Xem mục 0.5; nếu không xin được, báo cáo rõ hạn chế này |
 
 ## 13. Nhật ký quyết định
 
@@ -873,6 +874,7 @@ Màn hình trace cho thấy từng bước, tool đã gọi và quy tắc đã k
 | 2026-11-03 | Thêm cột `purchase_requests.proposal_json` | Tool `create_proposal` cần nơi lưu hồ sơ đề xuất, người duyệt cần xem được, và eval cần so sánh được; thiết kế trước đó chưa có chỗ lưu |
 | 2026-11-03 | Lưu đồng hồ giả lập trong bảng `sim_clock` | MCP server chạy ở tiến trình riêng nên phải thấy cùng một giờ, và giờ phải còn nguyên khi tắt chương trình rồi tiếp tục. Đổi lại, có thêm một bảng kỹ thuật mà bộ so sánh database phải bỏ qua |
 | 2026-11-03 | Dữ liệu mẫu viết tay, không sinh bằng số ngẫu nhiên có seed | Luôn giống hệt nhau, dễ đọc, và người viết kịch bản biết trước đáp án. Đổi lại, muốn thêm dữ liệu thì phải viết thêm bằng tay |
+| 2026-11-04 | Email mẫu nằm trong code Python, PDF báo giá được tạo từ bảng `QUOTATIONS` và commit vào repo; đáp án để riêng trong `evals/` | Báo giá và đáp án luôn khớp với dữ liệu mẫu, người đọc repo mở được PDF ngay. Đổi lại, mẫu vẫn do người làm dự án viết, chưa thay được mẫu thật |
 
 **Chưa áp dụng:**
 
@@ -950,3 +952,4 @@ Các bài dưới đây của bên thứ ba hoặc nhà cung cấp, chưa đối
 | 2026-11-03 | 1.8 | Viết schema 10 bảng; thêm cột `proposal_json` và chốt chặn ngân sách trong database |
 | 2026-11-03 | 1.9 | Viết đồng hồ giả lập; thêm bảng kỹ thuật `sim_clock` |
 | 2026-11-03 | 1.10 | Viết dữ liệu mẫu bằng tay, gồm các tình huống bẫy cho quy tắc R1–R3, R5–R8 |
+| 2026-11-04 | 1.11 | Xong tuần 1: thêm 16 email, 22 PDF báo giá và đáp án trích xuất |
