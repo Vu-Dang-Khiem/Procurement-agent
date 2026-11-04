@@ -2,25 +2,13 @@ import json
 
 import pytest
 
+from rules.approvers import pick_approvers
+from rules.policy import check_policy, required_levels, required_quotes
 from simulator.clock import SimClock
-from simulator.seed import MONITOR, QUARTER, START, build_database
+from simulator.seed import IT, MONITOR, QUARTER, START, build_database
 
 START_ISO = START.isoformat()
 TODAY = START.date().isoformat()
-
-
-def required_levels(amount):
-    if amount < 20_000_000:
-        return {"head"}
-    if amount <= 100_000_000:
-        return {"head", "finance"}
-    return {"head", "finance", "director"}
-
-
-def required_quotes(amount):
-    if amount < 20_000_000:
-        return 1
-    return 2 if amount <= 100_000_000 else 3
 
 
 @pytest.fixture
@@ -129,7 +117,7 @@ def test_approvals_follow_authority_rules(conn):
             " JOIN employees e ON e.id = a.approver_id WHERE a.request_id = ?",
             (request_id,),
         ).fetchall()
-        assert {row["level"] for row in rows} == required_levels(req["total_amount"])
+        assert {row["level"] for row in rows} == set(required_levels(req["total_amount"]))
         for row in rows:
             assert row["approver_id"] != req["requester_id"]
             if row["level"] == "head":
@@ -222,6 +210,13 @@ def test_trap_requests_14_to_16_look_split(conn):
 def test_trap_request_17_is_created_by_head(conn):
     assert request(conn, 17)["requester_id"] == 1
     assert scalar(conn, "SELECT head_id FROM departments WHERE id = 1") == 1
+
+
+def test_trap_request_17_reaches_approver_selection(conn):
+    # Chỉ có một báo giá máy in, nên hồ sơ phải qua được R2 thì mới gặp R5.
+    result = check_policy(conn, 17, 11, [11])
+    assert result.violations == []
+    assert pick_approvers(conn, IT, 1, result.total_amount) == [("director", 30)]
 
 
 def test_trap_request_19_has_too_few_usable_quotes(conn):

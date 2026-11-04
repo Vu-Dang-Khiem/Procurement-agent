@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Trạng thái** | Xong tuần 1 (công ty giả lập), chưa có agent |
-| **Phiên bản** | 1.12 |
+| **Phiên bản** | 1.13 |
 | **Cập nhật lần cuối** | 2026-11-04 |
 | **Việc tiếp theo** | Tuần 2: quy tắc R1–R8, MCP server, LLM cách ly |
 
@@ -529,6 +529,14 @@ Một công ty hư cấu gồm 5 phòng ban (IT, HR, Sales, Marketing, Finance),
 
 Ngân sách được giữ chỗ (`reserved`) khi gửi duyệt và trả lại khi bị từ chối hoặc hủy. Thao tác này chạy trong transaction để hai yêu cầu không cùng dùng một khoản ngân sách.
 
+**Cách áp dụng trong code (`rules/`):**
+
+- R1, R2, R3, R7 là vi phạm, chặn việc gửi duyệt. R6, R8 chỉ là dấu hiệu nghi ngờ để người duyệt xem xét.
+- R2 đếm báo giá trong `proposal_json`, chỉ tính báo giá còn hạn của nhà cung cấp được duyệt, và nhiều báo giá của cùng một nhà cung cấp chỉ tính là một.
+- R3 và R7 xét mọi báo giá trong hồ sơ, không chỉ báo giá được chọn. Báo giá vẫn còn hiệu lực trong ngày `valid_until`.
+- R5: trưởng phòng tự tạo yêu cầu thì giám đốc duyệt thay, kể cả khi số tiền chưa đến ngưỡng của giám đốc. Không còn ai đủ thẩm quyền thì trả lỗi `policy`.
+- R6, R8 xét các yêu cầu tạo cách nhau không quá 14 ngày, bỏ qua yêu cầu đã hủy.
+
 ### 5.2 Trạng thái yêu cầu
 
 ```
@@ -539,7 +547,7 @@ NEW → NEEDS_INFO ⇄ IN_REVIEW → PENDING_APPROVAL → APPROVED → PO_DRAFTE
 Từ các trạng thái chưa kết thúc: → ESCALATED hoặc CANCELLED
 ```
 
-Đây là ràng buộc về dữ liệu, không phải workflow dẫn dắt agent. Agent tự chọn việc cần làm, còn server từ chối các bước chuyển không hợp lệ.
+Đây là ràng buộc về dữ liệu, không phải workflow dẫn dắt agent. Agent tự chọn việc cần làm, còn server từ chối các bước chuyển không hợp lệ. Yêu cầu đủ thông tin đi thẳng từ NEW sang IN_REVIEW. COMPLETED, ESCALATED và CANCELLED là các trạng thái kết thúc.
 
 ### 5.3 Database
 
@@ -841,6 +849,7 @@ Màn hình trace cho thấy từng bước, tool đã gọi và quy tắc đã k
 | Truyền `actor_id` qua MCP | Kiểm chứng cách ghi đè ở tuần 3 |
 | PDF scan không có lớp văn bản | v1 chỉ hỗ trợ PDF có văn bản; quyết định về OCR hoặc đọc bằng ảnh sau |
 | Chưa có mẫu email và báo giá thật | Xem mục 0.5; nếu không xin được, báo cáo rõ hạn chế này |
+| R8 có thể cảnh báo quá nhiều: phòng IT mua nhiều mặt hàng khác nhau cùng nhóm `it` nên hay bị đánh dấu | Giữ đúng quy tắc vì đây chỉ là cảnh báo; xem lại khi eval ở tuần 4 cho thấy cảnh báo sai nhiều |
 
 ## 13. Nhật ký quyết định
 
@@ -876,6 +885,9 @@ Màn hình trace cho thấy từng bước, tool đã gọi và quy tắc đã k
 | 2026-11-03 | Lưu đồng hồ giả lập trong bảng `sim_clock` | MCP server chạy ở tiến trình riêng nên phải thấy cùng một giờ, và giờ phải còn nguyên khi tắt chương trình rồi tiếp tục. Đổi lại, có thêm một bảng kỹ thuật mà bộ so sánh database phải bỏ qua |
 | 2026-11-03 | Dữ liệu mẫu viết tay, không sinh bằng số ngẫu nhiên có seed | Luôn giống hệt nhau, dễ đọc, và người viết kịch bản biết trước đáp án. Đổi lại, muốn thêm dữ liệu thì phải viết thêm bằng tay |
 | 2026-11-04 | Email mẫu nằm trong code Python, PDF báo giá được tạo từ bảng `QUOTATIONS` và commit vào repo; đáp án để riêng trong `evals/` | Báo giá và đáp án luôn khớp với dữ liệu mẫu, người đọc repo mở được PDF ngay. Đổi lại, mẫu vẫn do người làm dự án viết, chưa thay được mẫu thật |
+| 2026-11-04 | R2 đếm báo giá qua `proposal_json`, không thêm liên kết giữa `quotations` và yêu cầu | Hồ sơ đề xuất đã ghi rõ báo giá nào thuộc yêu cầu nào, nên không cần sửa schema. Báo giá vẫn được ghép với yêu cầu theo tên mặt hàng, sai tên thì trả lỗi `validation` |
+| 2026-11-04 | Trưởng phòng tự tạo yêu cầu thì giám đốc duyệt thay | R5 cấm tự duyệt nhưng chưa nói ai duyệt thay. Giám đốc là cấp trên trực tiếp. Đổi lại, giám đốc phải duyệt cả những khoản nhỏ. Đây là giả định, chưa đối chiếu với quy trình thật |
+| 2026-11-04 | Yêu cầu #17 giảm từ 3 xuống 2 máy in | Với 3 máy, tổng 21,45 triệu cần 2 báo giá nhưng chỉ có 1 báo giá máy in, nên hồ sơ luôn bị R2 chặn và bẫy R5 không bao giờ xảy ra |
 
 **Chưa áp dụng:**
 
@@ -957,3 +969,4 @@ Các bài dưới đây của bên thứ ba hoặc nhà cung cấp, chưa đối
 | 2026-11-03 | 1.10 | Viết dữ liệu mẫu bằng tay, gồm các tình huống bẫy cho quy tắc R1–R3, R5–R8 |
 | 2026-11-04 | 1.11 | Xong tuần 1: thêm 16 email, 22 PDF báo giá và đáp án trích xuất |
 | 2026-11-04 | 1.12 | Ghi rõ cách dùng prompt cache; thêm Batch API và nhiều nhà cung cấp vào danh sách chưa áp dụng |
+| 2026-11-04 | 1.13 | Viết `rules/`: R1–R8, chọn người duyệt, phân quyền xem, chuyển trạng thái; ghi cách áp dụng quy tắc; sửa bẫy của yêu cầu #17 |
