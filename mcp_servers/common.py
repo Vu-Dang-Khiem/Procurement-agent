@@ -14,7 +14,7 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
-from rules.errors import InvalidInput, NotFound, PermissionDenied, PolicyViolation, RuleError
+from rules.errors import InvalidInput, NotFound, PermissionDenied, PolicyViolation, RuleError, Transient
 from rules.permissions import can_view_request, load_actor
 from rules.policy import load_request
 from simulator.clock import SimClock
@@ -27,6 +27,7 @@ _ERROR_TYPES = {
     InvalidInput: "validation",
     PolicyViolation: "policy",
     PermissionDenied: "permission",
+    Transient: "transient",
 }
 
 

@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Trạng thái** | Xong tuần 1 (công ty giả lập), chưa có agent |
-| **Phiên bản** | 1.15 |
+| **Phiên bản** | 1.16 |
 | **Cập nhật lần cuối** | 2026-11-04 |
 | **Việc tiếp theo** | Tuần 2: quy tắc R1–R8, MCP server, LLM cách ly |
 
@@ -409,7 +409,9 @@ Agent phải đọc lại database trước khi quyết định. Không dựa v�
 - Toàn bộ email, PDF và phản hồi qua email đều không tin cậy, kể cả từ nhân viên.
 - Quarantined LLM không có tool đọc nội dung gốc và chỉ trả về JSON theo schema. Code kiểm tra kiểu, khoảng giá trị và danh mục.
 - LLM chính chỉ thấy dữ liệu đã kiểm tra, không có tool nào trả nội dung gốc cho nó.
-- Trường văn bản tự do bị giới hạn độ dài và gắn nhãn không tin cậy. Dùng danh mục cố định khi có thể.
+- Kết quả chỉ gồm số, ngày và giá trị trong danh mục cố định, không có trường văn bản tự do nào đi đến LLM chính. Giá trị ngoài danh mục hoặc ngoài khoảng thành `null`, nghĩa là chưa rõ.
+- Chữ trong PDF mà người đọc không nhìn thấy (chữ trắng, cỡ rất nhỏ) bị loại trước khi gửi cho model và tự bật `suspicious_content`. Cách này không bắt được mọi kiểu ẩn chữ.
+- Model chỉ chép lại số liệu, code mới đổi giá về trước VAT và tính ngày hết hạn.
 - Nếu phát hiện nội dung giống mệnh lệnh, trả về `suspicious_content: true` và ghi vào audit log.
 
 Rủi ro còn lại: Quarantined LLM vẫn có thể bị lừa để điền sai dữ liệu, ví dụ giá thấp hơn thực tế. Vì vậy người duyệt phải xem được tài liệu gốc trên UI.
@@ -784,6 +786,7 @@ Kế hoạch gồm 8 giai đoạn, mỗi giai đoạn khoảng một tuần. Th�
 
 ```
 procurement-agent/
+├── config/models.yaml        # model theo vai trò
 ├── docs/
 │   └── AGENT_DESIGN.md       # tài liệu này
 ├── simulator/                # schema, seed, đồng hồ giả lập, email, PDF
@@ -810,6 +813,8 @@ procurement-agent/
 │   ├── runner.py
 │   ├── state_diff.py
 │   ├── extraction_answers.py   # đáp án trích xuất email và PDF
+│   ├── grade_extraction.py     # chấm LLM cách ly theo đáp án
+│   ├── run_extraction.py       # chạy LLM cách ly bằng model thật, tốn tiền API
 │   ├── faults.py
 │   └── reports/
 ├── tests/
@@ -823,7 +828,7 @@ procurement-agent/
 | Ngôn ngữ | Python 3.12 | Hệ sinh thái agent đầy đủ |
 | LLM | Claude API | Haiku 5.5 là model chính, Sonnet 5.5 để so sánh; giữ cùng API khi đổi model |
 | Agent runtime | LangGraph | Chạy bền bỉ, checkpointer, `interrupt()`, Store |
-| Tích hợp LLM | `langchain-anthropic` | LangChain chỉ là lớp tích hợp, không điều phối |
+| Tích hợp LLM | `langchain-anthropic` cho agent chính, SDK `anthropic` cho LLM cách ly | LangChain chỉ là lớp tích hợp, không điều phối. LLM cách ly không có tool hay vòng lặp nên gọi thẳng SDK |
 | Tool | MCP (FastMCP trong `mcp==1.30.0`), `langchain-mcp-adapters` | Tách hệ thống ngoài khỏi agent. Chưa lên `mcp` 2.x vì adapter còn yêu cầu `mcp<2` |
 | Database | SQLite, có thể chuyển PostgreSQL sau | Đơn giản, dễ chụp và so sánh |
 | PDF | PyMuPDF | Đọc PDF có văn bản |
@@ -897,6 +902,10 @@ Màn hình trace cho thấy từng bước, tool đã gọi và quy tắc đã k
 | 2026-11-04 | Tool trả JSON gọn dạng văn bản thay vì kết quả có cấu trúc của MCP | Thứ tự khóa cố định giúp giữ prompt cache, không escape tiếng Việt và không lặp dữ liệu nên đỡ tốn token. Đổi lại, client phải tự đọc JSON |
 | 2026-11-04 | Hồ sơ vi phạm quy tắc vẫn được lưu, nhưng `submit_for_approval` kiểm tra lại và chặn | Người xem thấy được vi phạm thay vì mất hồ sơ, và ngân sách hay hạn báo giá có đổi sau đó cũng không lọt qua |
 | 2026-11-04 | `ask_requester` không có tham số người nhận, câu hỏi được ghi vào `clarifications`, và mọi câu hỏi chưa hủy đều tính vào giới hạn 2 lần | Agent không thể gửi thư ra ngoài vì không có chỗ điền địa chỉ, thay vì phải lọc địa chỉ. Đổi lại, muốn hỏi người khác thì phải thêm tool mới |
+| 2026-11-04 | LLM cách ly gọi thẳng SDK `anthropic`, không qua LangChain | Chỉ là một lời gọi không có tool, và lời gọi đó có thể kiểm tra chắc chắn là không truyền tool nào. Đổi lại, dự án có hai cách gọi model |
+| 2026-11-04 | Kết quả của LLM cách ly không có văn bản tự do; mặt hàng và nhà cung cấp phải nằm trong danh mục | Nội dung độc hại không có đường đi đến LLM chính, thay vì chỉ gắn nhãn không tin cậy. Đổi lại, mặt hàng hoặc nhà cung cấp mới phải được thêm vào danh mục trước |
+| 2026-11-04 | Loại chữ ẩn trong PDF bằng code trước khi gửi model | Người duyệt không thấy chữ này nên nó không được ảnh hưởng đến kết quả, và việc phát hiện không phụ thuộc vào model. Đổi lại, chữ trắng trên nền tối cũng bị loại |
+| 2026-11-04 | Model chép lại giá và ngày như in, code tính giá trước VAT và ngày hết hạn | Theo nguyên tắc phép tính do code làm, tránh model tính sai. Đổi lại, schema có thêm vài trường |
 | 2026-11-04 | Yêu cầu #17 giảm từ 3 xuống 2 máy in | Với 3 máy, tổng 21,45 triệu cần 2 báo giá nhưng chỉ có 1 báo giá máy in, nên hồ sơ luôn bị R2 chặn và bẫy R5 không bao giờ xảy ra |
 
 **Chưa áp dụng:**
@@ -982,3 +991,4 @@ Các bài dưới đây của bên thứ ba hoặc nhà cung cấp, chưa đối
 | 2026-11-04 | 1.13 | Viết `rules/`: R1–R8, chọn người duyệt, phân quyền xem, chuyển trạng thái; ghi cách áp dụng quy tắc; sửa bẫy của yêu cầu #17 |
 | 2026-11-04 | 1.14 | Viết `erp-mcp` với 8 tool và hợp đồng tool chung; chốt `mcp==1.30.0`; ghi quyền ghi và các trạng thái tool được chuyển |
 | 2026-11-04 | 1.15 | Viết `mail-mcp` với tool `ask_requester` |
+| 2026-11-04 | 1.16 | Viết LLM cách ly và bộ chấm; thêm `config/models.yaml`; loại chữ ẩn trong PDF; chưa chạy bằng model thật |

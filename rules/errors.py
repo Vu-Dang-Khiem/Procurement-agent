@@ -21,3 +21,7 @@ class PolicyViolation(RuleError):
 
 class PermissionDenied(RuleError):
     pass
+
+
+class Transient(RuleError):
+    pass

@@ -1,0 +1,5 @@
+# Model theo vai trò, để đổi model mà không phải sửa code. Xem mục 4.1 của tài liệu thiết kế.
+models:
+  main_agent: claude-haiku-5-5
+  quarantine: claude-haiku-5-5
+  judge: claude-haiku-5-5
