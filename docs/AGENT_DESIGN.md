@@ -3,9 +3,9 @@
 | | |
 |---|---|
 | **Trạng thái** | Đang làm tuần 1, chưa có code chạy được |
-| **Phiên bản** | 1.9 |
+| **Phiên bản** | 1.10 |
 | **Cập nhật lần cuối** | 2026-11-03 |
-| **Việc tiếp theo** | Tuần 1: dữ liệu mẫu (seed) |
+| **Việc tiếp theo** | Tuần 1: công cụ chụp và so sánh database |
 
 Đây là file duy nhất để theo dõi dự án. Mục 0 dùng để xem nhanh và giữ đúng hướng, các mục sau là thiết kế chi tiết.
 
@@ -562,7 +562,7 @@ Schema đầy đủ ở `simulator/schema.sql`. Tiền là số nguyên VND, `va
 
 ### 5.4 Yêu cầu với dữ liệu
 
-- **Có thể tái lập:** dùng seed cố định và đồng hồ giả lập để "tuần này" hay "hết hạn" cho kết quả ổn định.
+- **Có thể tái lập:** dữ liệu mẫu viết tay trong `simulator/seed.py`, không dùng số ngẫu nhiên, cùng với đồng hồ giả lập để "tuần này" hay "hết hạn" cho kết quả ổn định.
 - **Có nhiễu:** email không dấu, viết tắt ("5tr/c"), thiếu thông tin, nhiều mẫu báo giá, bảng bị vỡ định dạng.
 - **Không chỉ do LLM sinh:** tự viết các trường hợp khó, thử xin 10–20 mẫu thật đã ẩn thông tin.
 - **Có người ngoài góp kịch bản:** nhờ người làm mua hàng hoặc kế toán viết 10–20 yêu cầu theo cách họ thường viết. Nếu không nhờ được, ghi rõ hạn chế này trong báo cáo.
@@ -872,6 +872,7 @@ Màn hình trace cho thấy từng bước, tool đã gọi và quy tắc đã k
 | 2026-11-03 | Thêm `waiting_reply` và `blocked`; đổi `wait_approval` thành node chờ chung `wait_human`; thêm bảng `clarifications` | Đồ thị chờ được câu trả lời của người yêu cầu, và không phải báo `completed` khi mục tiêu không thể hoàn thành. Đổi lại, bộ chạy eval phải giả lập thêm người yêu cầu |
 | 2026-11-03 | Thêm cột `purchase_requests.proposal_json` | Tool `create_proposal` cần nơi lưu hồ sơ đề xuất, người duyệt cần xem được, và eval cần so sánh được; thiết kế trước đó chưa có chỗ lưu |
 | 2026-11-03 | Lưu đồng hồ giả lập trong bảng `sim_clock` | MCP server chạy ở tiến trình riêng nên phải thấy cùng một giờ, và giờ phải còn nguyên khi tắt chương trình rồi tiếp tục. Đổi lại, có thêm một bảng kỹ thuật mà bộ so sánh database phải bỏ qua |
+| 2026-11-03 | Dữ liệu mẫu viết tay, không sinh bằng số ngẫu nhiên có seed | Luôn giống hệt nhau, dễ đọc, và người viết kịch bản biết trước đáp án. Đổi lại, muốn thêm dữ liệu thì phải viết thêm bằng tay |
 
 **Chưa áp dụng:**
 
@@ -948,3 +949,4 @@ Các bài dưới đây của bên thứ ba hoặc nhà cung cấp, chưa đối
 | 2026-11-03 | 1.7 | Thêm trạng thái `waiting_reply` và `blocked`; đổi node chờ thành `wait_human`; thêm bảng `clarifications` và phần `human` trong kịch bản eval |
 | 2026-11-03 | 1.8 | Viết schema 10 bảng; thêm cột `proposal_json` và chốt chặn ngân sách trong database |
 | 2026-11-03 | 1.9 | Viết đồng hồ giả lập; thêm bảng kỹ thuật `sim_clock` |
+| 2026-11-03 | 1.10 | Viết dữ liệu mẫu bằng tay, gồm các tình huống bẫy cho quy tắc R1–R3, R5–R8 |
