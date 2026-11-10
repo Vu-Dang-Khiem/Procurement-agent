@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Trạng thái** | Xong tuần 2 (quy tắc, 3 MCP server, LLM cách ly), chưa có agent |
-| **Phiên bản** | 1.18 |
+| **Phiên bản** | 1.20 |
 | **Cập nhật lần cuối** | 2026-11-10 |
 | **Việc tiếp theo** | Tuần 3: đồ thị LangGraph, lớp bảo vệ, dừng chờ duyệt |
 
@@ -856,8 +856,8 @@ Màn hình trace cho thấy từng bước, tool đã gọi và quy tắc đã k
 | Người làm dự án vừa viết agent vừa viết đề kiểm tra | Giữ riêng một bộ kiểm thử, nhờ người ngoài viết kịch bản, báo cáo rõ hạn chế |
 | Nhiều tool ghi trong một lượt gọi | Tool ghi chạy từng cái một; kiểm thử ở tuần 3; có thể tắt gọi song song khi có tool nhạy cảm |
 | Người duyệt hoặc người yêu cầu không bao giờ phản hồi | v1 chưa tự hết hạn; hủy yêu cầu thì nhiệm vụ chạy tiếp. Thêm thời hạn nếu eval cho thấy cần |
-| Truyền `actor_id` qua MCP | Kiểm chứng cách ghi đè ở tuần 3, cả với `task_id` |
-| Sai kiểu tham số bị thư viện MCP chặn trước khi vào tool, nên lỗi trả về không theo hợp đồng chung | Lớp bảo vệ ở tuần 3 đổi các lỗi này sang `validation` |
+| Truyền `actor_id` qua MCP | Đã kiểm chứng ở tuần 3: LLM không thấy hai trường này, và nếu tự điền `actor_id` của giám đốc thì lớp bảo vệ vẫn thay bằng danh tính thật. v1 vẫn tin backend; hệ thống thật cần xác thực bằng token |
+| Sai kiểu tham số bị thư viện MCP chặn trước khi vào tool, nên lỗi trả về không theo hợp đồng chung | Đã xử lý ở tuần 3: lớp bảo vệ đổi các lỗi này sang `validation` |
 | PDF scan không có lớp văn bản | v1 chỉ hỗ trợ PDF có văn bản; quyết định về OCR hoặc đọc bằng ảnh sau |
 | Chưa có mẫu email và báo giá thật | Xem mục 0.5; nếu không xin được, báo cáo rõ hạn chế này |
 | R8 có thể cảnh báo quá nhiều: phòng IT mua nhiều mặt hàng khác nhau cùng nhóm `it` nên hay bị đánh dấu | Giữ đúng quy tắc vì đây chỉ là cảnh báo; xem lại khi eval ở tuần 4 cho thấy cảnh báo sai nhiều |
@@ -906,6 +906,9 @@ Màn hình trace cho thấy từng bước, tool đã gọi và quy tắc đã k
 | 2026-11-04 | Kết quả của LLM cách ly không có văn bản tự do; mặt hàng và nhà cung cấp phải nằm trong danh mục | Nội dung độc hại không có đường đi đến LLM chính, thay vì chỉ gắn nhãn không tin cậy. Đổi lại, mặt hàng hoặc nhà cung cấp mới phải được thêm vào danh mục trước |
 | 2026-11-04 | Loại chữ ẩn trong PDF bằng code trước khi gửi model | Người duyệt không thấy chữ này nên nó không được ảnh hưởng đến kết quả, và việc phát hiện không phụ thuộc vào model. Đổi lại, chữ trắng trên nền tối cũng bị loại |
 | 2026-11-04 | Model chép lại giá và ngày như in, code tính giá trước VAT và ngày hết hạn | Theo nguyên tắc phép tính do code làm, tránh model tính sai. Đổi lại, schema có thêm vài trường |
+| 2026-11-10 | Giữ một phiên MCP mở cho mỗi server suốt nhiệm vụ, không dùng `get_tools()` mặc định | Mặc định mỗi lời gọi tool khởi động lại server: chậm và docs-mcp mất kết quả đã lưu. Đổi lại, phải tự mở và đóng phiên |
+| 2026-11-10 | Bỏ `actor_id` và `task_id` khỏi mô tả tool gửi cho LLM; lớp bảo vệ vẫn ghi đè hai trường này | LLM không cần điền và không có chỗ để giả danh, đỡ tốn token. Ghi đè vẫn giữ để phòng LLM tự thêm vào |
+| 2026-11-10 | Lớp bảo vệ chia thành 6 hàm nhỏ do người làm dự án tự viết, node tools ghép chúng lại | Tự viết phần lõi để hiểu và bảo vệ được khi phỏng vấn; hàm nhỏ thì test riêng từng quy tắc được |
 | 2026-11-10 | `read_quotation_pdf` đối chiếu kết quả đọc với dữ liệu báo giá và trả `mismatches`, nhưng không tự sửa bên nào | Phát hiện được file gốc khác hệ thống mà agent không phải đọc văn bản gốc. Quyết định bên nào đúng thuộc về người duyệt |
 | 2026-11-10 | `docs-mcp` lưu kết quả đọc theo nội dung file, trong bộ nhớ của tiến trình | Đọc lại cùng một file không tốn thêm lần gọi model. Đổi lại, tắt server thì mất kết quả đã lưu, và lỗi tạm thời không được lưu |
 | 2026-11-04 | Yêu cầu #17 giảm từ 3 xuống 2 máy in | Với 3 máy, tổng 21,45 triệu cần 2 báo giá nhưng chỉ có 1 báo giá máy in, nên hồ sơ luôn bị R2 chặn và bẫy R5 không bao giờ xảy ra |
@@ -996,3 +999,5 @@ Các bài dưới đây của bên thứ ba hoặc nhà cung cấp, chưa đối
 | 2026-11-04 | 1.16 | Viết LLM cách ly và bộ chấm; thêm `config/models.yaml`; loại chữ ẩn trong PDF; chưa chạy bằng model thật |
 | 2026-11-10 | 1.17 | Chạy LLM cách ly bằng Haiku 5.5 một lần trên 38 mẫu: email đúng 14/16 mẫu (sai 3/137 trường), báo giá đúng 22/22, không bỏ sót hay báo nhầm cờ nghi ngờ; tốn 0,0123 USD. Mẫu, đáp án và prompt đều do người làm dự án viết nên kết quả có thể đẹp hơn thực tế |
 | 2026-11-10 | 1.18 | Viết `docs-mcp` với tool `read_quotation_pdf`; xong tuần 2 |
+| 2026-11-10 | 1.19 | Bắt đầu tuần 3: chốt LangGraph 1.2.20 và `langchain-mcp-adapters` 0.3.2; viết đồ thị agent ⇄ tools, model giả, `submit_final_report`; khung lớp bảo vệ và test, chờ viết phần lõi |
+| 2026-11-10 | 1.20 | Người làm dự án tự viết xong 6 hàm của lớp bảo vệ; agent chạy được vòng lặp với model giả và 3 MCP server thật |
