@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Trạng thái** | Xong tuần 1 (công ty giả lập), chưa có agent |
-| **Phiên bản** | 1.17 |
-| **Cập nhật lần cuối** | 2026-11-04 |
-| **Việc tiếp theo** | Tuần 2: quy tắc R1–R8, MCP server, LLM cách ly |
+| **Trạng thái** | Xong tuần 2 (quy tắc, 3 MCP server, LLM cách ly), chưa có agent |
+| **Phiên bản** | 1.18 |
+| **Cập nhật lần cuối** | 2026-11-10 |
+| **Việc tiếp theo** | Tuần 3: đồ thị LangGraph, lớp bảo vệ, dừng chờ duyệt |
 
 Đây là file duy nhất để theo dõi dự án. Mục 0 dùng để xem nhanh và giữ đúng hướng, các mục sau là thiết kế chi tiết.
 
@@ -49,7 +49,7 @@ Một AI Agent nhận mục tiêu về mua hàng bằng tiếng Việt, tự l�
 Làm từ dưới lên. Chỉ đánh dấu khi đã đạt điều kiện hoàn thành, không đánh dấu khi mới viết xong code.
 
 - [x] **Tuần 1, công ty giả lập:** tạo lại được dữ liệu giống hệt nhau; so sánh database phát hiện đúng thay đổi.
-- [ ] **Tuần 2, tools cốt lõi:** quy tắc R1–R8, 3 MCP server gọn với 10 tool, LLM cách ly; unit test đạt và từng server chạy được khi chưa có agent.
+- [x] **Tuần 2, tools cốt lõi:** quy tắc R1–R8, 3 MCP server gọn với 10 tool, LLM cách ly; unit test đạt và từng server chạy được khi chưa có agent.
 - [ ] **Tuần 3, bản chạy trọn vẹn đầu tiên:** một yêu cầu mua hàng đi hết từ đầu đến bản nháp đơn hàng, có duyệt và trả lời bằng dòng lệnh, xem được trace; tắt chương trình rồi tiếp tục được.
 - [ ] **Tuần 4, đo lường:** bộ eval, workflow cố định, gây lỗi tool, Langfuse; có điểm của workflow và bản A trên cùng tập nhỏ, biết chi phí mỗi lần chạy.
 - [ ] **Tuần 5, an toàn và đủ tool:** phân quyền, chống trùng đơn, đối chiếu kết quả, các tool còn lại; không vượt quyền hay trùng đơn trong test, chạy được các mục tiêu mở.
@@ -906,6 +906,8 @@ Màn hình trace cho thấy từng bước, tool đã gọi và quy tắc đã k
 | 2026-11-04 | Kết quả của LLM cách ly không có văn bản tự do; mặt hàng và nhà cung cấp phải nằm trong danh mục | Nội dung độc hại không có đường đi đến LLM chính, thay vì chỉ gắn nhãn không tin cậy. Đổi lại, mặt hàng hoặc nhà cung cấp mới phải được thêm vào danh mục trước |
 | 2026-11-04 | Loại chữ ẩn trong PDF bằng code trước khi gửi model | Người duyệt không thấy chữ này nên nó không được ảnh hưởng đến kết quả, và việc phát hiện không phụ thuộc vào model. Đổi lại, chữ trắng trên nền tối cũng bị loại |
 | 2026-11-04 | Model chép lại giá và ngày như in, code tính giá trước VAT và ngày hết hạn | Theo nguyên tắc phép tính do code làm, tránh model tính sai. Đổi lại, schema có thêm vài trường |
+| 2026-11-10 | `read_quotation_pdf` đối chiếu kết quả đọc với dữ liệu báo giá và trả `mismatches`, nhưng không tự sửa bên nào | Phát hiện được file gốc khác hệ thống mà agent không phải đọc văn bản gốc. Quyết định bên nào đúng thuộc về người duyệt |
+| 2026-11-10 | `docs-mcp` lưu kết quả đọc theo nội dung file, trong bộ nhớ của tiến trình | Đọc lại cùng một file không tốn thêm lần gọi model. Đổi lại, tắt server thì mất kết quả đã lưu, và lỗi tạm thời không được lưu |
 | 2026-11-04 | Yêu cầu #17 giảm từ 3 xuống 2 máy in | Với 3 máy, tổng 21,45 triệu cần 2 báo giá nhưng chỉ có 1 báo giá máy in, nên hồ sơ luôn bị R2 chặn và bẫy R5 không bao giờ xảy ra |
 
 **Chưa áp dụng:**
@@ -993,3 +995,4 @@ Các bài dưới đây của bên thứ ba hoặc nhà cung cấp, chưa đối
 | 2026-11-04 | 1.15 | Viết `mail-mcp` với tool `ask_requester` |
 | 2026-11-04 | 1.16 | Viết LLM cách ly và bộ chấm; thêm `config/models.yaml`; loại chữ ẩn trong PDF; chưa chạy bằng model thật |
 | 2026-11-10 | 1.17 | Chạy LLM cách ly bằng Haiku 5.5 một lần trên 38 mẫu: email đúng 14/16 mẫu (sai 3/137 trường), báo giá đúng 22/22, không bỏ sót hay báo nhầm cờ nghi ngờ; tốn 0,0123 USD. Mẫu, đáp án và prompt đều do người làm dự án viết nên kết quả có thể đẹp hơn thực tế |
+| 2026-11-10 | 1.18 | Viết `docs-mcp` với tool `read_quotation_pdf`; xong tuần 2 |

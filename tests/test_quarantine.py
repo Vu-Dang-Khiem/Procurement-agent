@@ -7,6 +7,7 @@ import anthropic
 import httpx2
 import pymupdf
 import pytest
+from quarantine_fakes import FakeModel, quote_draft, draft_from_answer
 
 from evals.extraction_answers import EMAIL_ANSWERS, QUOTE_ANSWERS
 from evals.grade_extraction import Summary, grade_email, grade_quote
@@ -17,7 +18,7 @@ from quarantine.schemas import EmailDraft, EmailItemDraft, QuoteDraft
 from quarantine.validation import validate_email, validate_quote
 from rules.errors import InvalidInput, Transient
 from simulator.emails import EMAILS
-from simulator.quotes import DATA_DIR, INJECTIONS, _broken_layout, _letter_layout, layout_of, source_file
+from simulator.quotes import DATA_DIR, INJECTIONS, source_file
 from simulator.seed import MONITOR, QUOTATIONS, build_database
 
 RECEIVED = date(2026, 11, 3)
@@ -31,18 +32,6 @@ def catalog():
     conn.close()
 
 
-class FakeModel:
-    """Trả về bản nháp cho trước và ghi lại mọi thứ được gửi đi."""
-
-    def __init__(self, draft):
-        self.draft = draft
-        self.calls = []
-
-    def extract(self, system, document, schema):
-        self.calls.append(SimpleNamespace(system=system, document=document, schema=schema))
-        return self.draft
-
-
 def quote_pdf(quotation_id):
     return DATA_DIR / source_file(quotation_id)
 
@@ -52,47 +41,6 @@ def item_draft(**fields):
         item=None, category=None, quantity=None, unit_price_min=None, unit_price_max=None, total_estimate=None, needed_by=None
     )
     return EmailItemDraft(**(values | fields))
-
-
-def quote_draft(**fields):
-    values = dict(
-        supplier="Minh Long Tech",
-        item=MONITOR,
-        printed_unit_price=5_200_000,
-        price_includes_vat=False,
-        vat_rate=10,
-        delivery_days=5,
-        warranty_months=36,
-        valid_until="2026-12-01",
-        issued_on=None,
-        valid_days=None,
-        suspicious_content=False,
-    )
-    return QuoteDraft(**(values | fields))
-
-
-def draft_from_answer(answer):
-    """Bản nháp mà model đọc đúng sẽ trả về, theo đúng kiểu trình bày của từng file PDF."""
-    quotation_id = next(id_ for id_, value in QUOTE_ANSWERS.items() if value is answer)
-    fields = dict(
-        supplier=answer["supplier"],
-        item=answer["item"],
-        printed_unit_price=answer["unit_price"],
-        vat_rate=answer["vat_rate"],
-        delivery_days=answer["delivery_days"],
-        warranty_months=answer["warranty_months"],
-        valid_until=answer["valid_until"],
-        suspicious_content=answer["suspicious_content"],
-    )
-    if layout_of(quotation_id) is _broken_layout:
-        fields |= dict(
-            printed_unit_price=answer["unit_price"] * (100 + answer["vat_rate"]) // 100,
-            price_includes_vat=True,
-        )
-    if layout_of(quotation_id) is _letter_layout:
-        issued = date.fromisoformat(answer["valid_until"]).toordinal() - 60
-        fields |= dict(valid_until=None, issued_on=date.fromordinal(issued).isoformat(), valid_days=60)
-    return quote_draft(**fields)
 
 
 # Đọc PDF
@@ -303,7 +251,7 @@ def test_email_prompt_gives_received_weekday_and_catalog(catalog):
 def test_correct_reading_of_every_pdf_matches_answer(catalog, quotation_id):
     # Chỉ kiểm tra phần code: bản nháp đúng phải ra đúng đáp án, ở cả ba kiểu trình bày.
     answer = QUOTE_ANSWERS[quotation_id]
-    result = extract_quote(FakeModel(draft_from_answer(answer)), catalog, quote_pdf(quotation_id))
+    result = extract_quote(FakeModel(draft_from_answer(quotation_id)), catalog, quote_pdf(quotation_id))
     assert grade_quote(result, answer).correct
 
 
