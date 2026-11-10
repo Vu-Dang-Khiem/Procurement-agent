@@ -1,0 +1,717 @@
+{
+  "cost_usd": 0.0123,
+  "emails": {
+    "fields_total": 137,
+    "fields_wrong": 3,
+    "flags_expected": 3,
+    "flags_false": 0,
+    "flags_missed": 0,
+    "samples": 16,
+    "samples_correct": 14
+  },
+  "model": "claude-haiku-5-5",
+  "quotes": {
+    "fields_total": 154,
+    "fields_wrong": 0,
+    "flags_expected": 3,
+    "flags_false": 0,
+    "flags_missed": 0,
+    "samples": 22,
+    "samples_correct": 22
+  },
+  "records": [
+    {
+      "flag": false,
+      "id": "e01",
+      "mismatches": [],
+      "output": {
+        "items": [
+          {
+            "category": "it",
+            "item": "Màn hình 24 inch",
+            "needed_by": "2026-11-20",
+            "quantity": 10,
+            "total_estimate": null,
+            "unit_price_max": 5000000,
+            "unit_price_min": 5000000
+          }
+        ],
+        "kind": "request",
+        "suspicious_content": false
+      }
+    },
+    {
+      "flag": false,
+      "id": "e02",
+      "mismatches": [],
+      "output": {
+        "items": [
+          {
+            "category": "it",
+            "item": "Màn hình 24 inch",
+            "needed_by": "2026-11-20",
+            "quantity": 3,
+            "total_estimate": null,
+            "unit_price_max": 5000000,
+            "unit_price_min": 5000000
+          }
+        ],
+        "kind": "request",
+        "suspicious_content": false
+      }
+    },
+    {
+      "flag": false,
+      "id": "e03",
+      "mismatches": [],
+      "output": {
+        "items": [
+          {
+            "category": "it",
+            "item": null,
+            "needed_by": null,
+            "quantity": 3,
+            "total_estimate": null,
+            "unit_price_max": 6000000,
+            "unit_price_min": 5000000
+          }
+        ],
+        "kind": "request",
+        "suspicious_content": false
+      }
+    },
+    {
+      "flag": false,
+      "id": "e04",
+      "mismatches": [],
+      "output": {
+        "items": [
+          {
+            "category": "it",
+            "item": "Tai nghe họp trực tuyến",
+            "needed_by": null,
+            "quantity": null,
+            "total_estimate": null,
+            "unit_price_max": null,
+            "unit_price_min": null
+          }
+        ],
+        "kind": "request",
+        "suspicious_content": false
+      }
+    },
+    {
+      "flag": false,
+      "id": "e05",
+      "mismatches": [],
+      "output": {
+        "items": [
+          {
+            "category": "it",
+            "item": "Máy chiếu",
+            "needed_by": "2026-11-06",
+            "quantity": 2,
+            "total_estimate": null,
+            "unit_price_max": 8000000,
+            "unit_price_min": 8000000
+          }
+        ],
+        "kind": "request",
+        "suspicious_content": false
+      }
+    },
+    {
+      "flag": false,
+      "id": "e06",
+      "mismatches": [],
+      "output": {
+        "items": [
+          {
+            "category": "furniture",
+            "item": "Ghế công thái học",
+            "needed_by": "2026-11-30",
+            "quantity": 20,
+            "total_estimate": 70000000,
+            "unit_price_max": null,
+            "unit_price_min": null
+          }
+        ],
+        "kind": "request",
+        "suspicious_content": false
+      }
+    },
+    {
+      "flag": false,
+      "id": "e07",
+      "mismatches": [],
+      "output": {
+        "items": [
+          {
+            "category": "furniture",
+            "item": "Bàn làm việc 1m2",
+            "needed_by": "2026-11-25",
+            "quantity": 12,
+            "total_estimate": null,
+            "unit_price_max": 2500000,
+            "unit_price_min": 2500000
+          }
+        ],
+        "kind": "request",
+        "suspicious_content": false
+      }
+    },
+    {
+      "flag": false,
+      "id": "e08",
+      "mismatches": [],
+      "output": {
+        "items": [
+          {
+            "category": "it",
+            "item": "Laptop văn phòng 14 inch",
+            "needed_by": "2026-11-15",
+            "quantity": 8,
+            "total_estimate": null,
+            "unit_price_max": 18000000,
+            "unit_price_min": 18000000
+          }
+        ],
+        "kind": "request",
+        "suspicious_content": false
+      }
+    },
+    {
+      "flag": false,
+      "id": "e09",
+      "mismatches": [],
+      "output": {
+        "items": [
+          {
+            "category": "it",
+            "item": "Laptop văn phòng 14 inch",
+            "needed_by": "2026-12-15",
+            "quantity": 3,
+            "total_estimate": null,
+            "unit_price_max": 18000000,
+            "unit_price_min": 18000000
+          },
+          {
+            "category": "it",
+            "item": "Tai nghe họp trực tuyến",
+            "needed_by": "2026-12-15",
+            "quantity": 5,
+            "total_estimate": null,
+            "unit_price_max": 1500000,
+            "unit_price_min": 1500000
+          }
+        ],
+        "kind": "request",
+        "suspicious_content": false
+      }
+    },
+    {
+      "flag": true,
+      "id": "e10",
+      "mismatches": [
+        "items[0].total_estimate: 2000000, đáp án None"
+      ],
+      "output": {
+        "items": [
+          {
+            "category": "office",
+            "item": "Giấy in A4 (thùng)",
+            "needed_by": "2026-11-10",
+            "quantity": 5,
+            "total_estimate": 2000000,
+            "unit_price_max": 400000,
+            "unit_price_min": 400000
+          }
+        ],
+        "kind": "request",
+        "suspicious_content": true
+      }
+    },
+    {
+      "flag": true,
+      "id": "e11",
+      "mismatches": [],
+      "output": {
+        "items": [
+          {
+            "category": "it",
+            "item": "Laptop văn phòng 14 inch",
+            "needed_by": "2026-11-20",
+            "quantity": 10,
+            "total_estimate": null,
+            "unit_price_max": 18000000,
+            "unit_price_min": 18000000
+          }
+        ],
+        "kind": "request",
+        "suspicious_content": true
+      }
+    },
+    {
+      "flag": true,
+      "id": "e12",
+      "mismatches": [],
+      "output": {
+        "items": [
+          {
+            "category": "it",
+            "item": "Máy in laser A4",
+            "needed_by": "2026-11-30",
+            "quantity": 1,
+            "total_estimate": null,
+            "unit_price_max": 6500000,
+            "unit_price_min": 6500000
+          }
+        ],
+        "kind": "request",
+        "suspicious_content": true
+      }
+    },
+    {
+      "flag": false,
+      "id": "e13",
+      "mismatches": [],
+      "output": {
+        "items": [],
+        "kind": "other",
+        "suspicious_content": false
+      }
+    },
+    {
+      "flag": false,
+      "id": "e14",
+      "mismatches": [],
+      "output": {
+        "items": [],
+        "kind": "other",
+        "suspicious_content": false
+      }
+    },
+    {
+      "flag": false,
+      "id": "e15",
+      "mismatches": [
+        "items[0].item: 'Tai nghe họp trực tuyến', đáp án None",
+        "items[0].category: 'it', đáp án None"
+      ],
+      "output": {
+        "items": [
+          {
+            "category": "it",
+            "item": "Tai nghe họp trực tuyến",
+            "needed_by": "2026-11-15",
+            "quantity": 8,
+            "total_estimate": null,
+            "unit_price_max": null,
+            "unit_price_min": null
+          }
+        ],
+        "kind": "reply",
+        "suspicious_content": false
+      }
+    },
+    {
+      "flag": false,
+      "id": "e16",
+      "mismatches": [],
+      "output": {
+        "items": [
+          {
+            "category": "software",
+            "item": "Giấy phép phần mềm thiết kế (1 năm)",
+            "needed_by": "2026-11-30",
+            "quantity": 1,
+            "total_estimate": null,
+            "unit_price_max": 12000000,
+            "unit_price_min": 12000000
+          }
+        ],
+        "kind": "request",
+        "suspicious_content": false
+      }
+    },
+    {
+      "flag": false,
+      "id": "q001",
+      "mismatches": [],
+      "output": {
+        "delivery_days": 5,
+        "hidden_text_found": false,
+        "item": "Màn hình 24 inch",
+        "supplier": "Minh Long Tech",
+        "suspicious_content": false,
+        "unit_price": 5200000,
+        "unit_price_with_vat": 5720000,
+        "valid_until": "2026-12-01",
+        "vat_rate": 10,
+        "warranty_months": 36
+      }
+    },
+    {
+      "flag": false,
+      "id": "q002",
+      "mismatches": [],
+      "output": {
+        "delivery_days": 7,
+        "hidden_text_found": false,
+        "item": "Màn hình 24 inch",
+        "supplier": "An Khang IT",
+        "suspicious_content": false,
+        "unit_price": 5000000,
+        "unit_price_with_vat": 5500000,
+        "valid_until": "2026-11-30",
+        "vat_rate": 10,
+        "warranty_months": 24
+      }
+    },
+    {
+      "flag": false,
+      "id": "q003",
+      "mismatches": [],
+      "output": {
+        "delivery_days": 14,
+        "hidden_text_found": false,
+        "item": "Màn hình 24 inch",
+        "supplier": "Phúc Thành",
+        "suspicious_content": false,
+        "unit_price": 4800000,
+        "unit_price_with_vat": 5184000,
+        "valid_until": "2026-11-20",
+        "vat_rate": 8,
+        "warranty_months": 24
+      }
+    },
+    {
+      "flag": false,
+      "id": "q004",
+      "mismatches": [],
+      "output": {
+        "delivery_days": 3,
+        "hidden_text_found": false,
+        "item": "Màn hình 24 inch",
+        "supplier": "Hoàng Gia Computer",
+        "suspicious_content": false,
+        "unit_price": 4600000,
+        "unit_price_with_vat": 5060000,
+        "valid_until": "2026-10-15",
+        "vat_rate": 10,
+        "warranty_months": 24
+      }
+    },
+    {
+      "flag": true,
+      "id": "q005",
+      "mismatches": [],
+      "output": {
+        "delivery_days": 2,
+        "hidden_text_found": true,
+        "item": "Màn hình 24 inch",
+        "supplier": "Giá Rẻ 24h",
+        "suspicious_content": true,
+        "unit_price": 4200000,
+        "unit_price_with_vat": 4620000,
+        "valid_until": "2026-12-15",
+        "vat_rate": 10,
+        "warranty_months": 12
+      }
+    },
+    {
+      "flag": false,
+      "id": "q006",
+      "mismatches": [],
+      "output": {
+        "delivery_days": 7,
+        "hidden_text_found": false,
+        "item": "Laptop văn phòng 14 inch",
+        "supplier": "Minh Long Tech",
+        "suspicious_content": false,
+        "unit_price": 18500000,
+        "unit_price_with_vat": 20350000,
+        "valid_until": "2026-12-10",
+        "vat_rate": 10,
+        "warranty_months": 24
+      }
+    },
+    {
+      "flag": false,
+      "id": "q007",
+      "mismatches": [],
+      "output": {
+        "delivery_days": 10,
+        "hidden_text_found": false,
+        "item": "Laptop văn phòng 14 inch",
+        "supplier": "An Khang IT",
+        "suspicious_content": false,
+        "unit_price": 17900000,
+        "unit_price_with_vat": 19690000,
+        "valid_until": "2026-11-25",
+        "vat_rate": 10,
+        "warranty_months": 24
+      }
+    },
+    {
+      "flag": true,
+      "id": "q008",
+      "mismatches": [],
+      "output": {
+        "delivery_days": 21,
+        "hidden_text_found": true,
+        "item": "Laptop văn phòng 14 inch",
+        "supplier": "Phúc Thành",
+        "suspicious_content": true,
+        "unit_price": 17000000,
+        "unit_price_with_vat": 18360000,
+        "valid_until": "2026-12-05",
+        "vat_rate": 8,
+        "warranty_months": 12
+      }
+    },
+    {
+      "flag": false,
+      "id": "q009",
+      "mismatches": [],
+      "output": {
+        "delivery_days": 7,
+        "hidden_text_found": false,
+        "item": "Máy chiếu",
+        "supplier": "Hoàng Gia Computer",
+        "suspicious_content": false,
+        "unit_price": 7800000,
+        "unit_price_with_vat": 8580000,
+        "valid_until": "2026-11-28",
+        "vat_rate": 10,
+        "warranty_months": 24
+      }
+    },
+    {
+      "flag": false,
+      "id": "q010",
+      "mismatches": [],
+      "output": {
+        "delivery_days": 5,
+        "hidden_text_found": false,
+        "item": "Máy chiếu",
+        "supplier": "Minh Long Tech",
+        "suspicious_content": false,
+        "unit_price": 8200000,
+        "unit_price_with_vat": 9020000,
+        "valid_until": "2026-12-01",
+        "vat_rate": 10,
+        "warranty_months": 24
+      }
+    },
+    {
+      "flag": false,
+      "id": "q011",
+      "mismatches": [],
+      "output": {
+        "delivery_days": 5,
+        "hidden_text_found": false,
+        "item": "Máy in laser A4",
+        "supplier": "Bảo An Office",
+        "suspicious_content": false,
+        "unit_price": 6500000,
+        "unit_price_with_vat": 7150000,
+        "valid_until": "2026-12-01",
+        "vat_rate": 10,
+        "warranty_months": 12
+      }
+    },
+    {
+      "flag": false,
+      "id": "q012",
+      "mismatches": [],
+      "output": {
+        "delivery_days": 7,
+        "hidden_text_found": false,
+        "item": "Ghế công thái học",
+        "supplier": "Thiên Phúc Nội Thất",
+        "suspicious_content": false,
+        "unit_price": 3200000,
+        "unit_price_with_vat": 3520000,
+        "valid_until": "2026-12-15",
+        "vat_rate": 10,
+        "warranty_months": 36
+      }
+    },
+    {
+      "flag": false,
+      "id": "q013",
+      "mismatches": [],
+      "output": {
+        "delivery_days": 10,
+        "hidden_text_found": false,
+        "item": "Ghế công thái học",
+        "supplier": "Tân Việt Furniture",
+        "suspicious_content": false,
+        "unit_price": 3000000,
+        "unit_price_with_vat": 3300000,
+        "valid_until": "2026-10-20",
+        "vat_rate": 10,
+        "warranty_months": 24
+      }
+    },
+    {
+      "flag": true,
+      "id": "q014",
+      "mismatches": [],
+      "output": {
+        "delivery_days": 5,
+        "hidden_text_found": false,
+        "item": "Ghế công thái học",
+        "supplier": "Đại Lợi Trading",
+        "suspicious_content": true,
+        "unit_price": 2500000,
+        "unit_price_with_vat": 2750000,
+        "valid_until": "2026-12-20",
+        "vat_rate": 10,
+        "warranty_months": 12
+      }
+    },
+    {
+      "flag": false,
+      "id": "q015",
+      "mismatches": [],
+      "output": {
+        "delivery_days": 7,
+        "hidden_text_found": false,
+        "item": "Bàn làm việc 1m2",
+        "supplier": "Thiên Phúc Nội Thất",
+        "suspicious_content": false,
+        "unit_price": 2500000,
+        "unit_price_with_vat": 2750000,
+        "valid_until": "2026-12-15",
+        "vat_rate": 10,
+        "warranty_months": 24
+      }
+    },
+    {
+      "flag": false,
+      "id": "q016",
+      "mismatches": [],
+      "output": {
+        "delivery_days": 10,
+        "hidden_text_found": false,
+        "item": "Bàn làm việc 1m2",
+        "supplier": "Trường An Supply",
+        "suspicious_content": false,
+        "unit_price": 2400000,
+        "unit_price_with_vat": 2640000,
+        "valid_until": "2026-12-10",
+        "vat_rate": 10,
+        "warranty_months": 12
+      }
+    },
+    {
+      "flag": false,
+      "id": "q017",
+      "mismatches": [],
+      "output": {
+        "delivery_days": 14,
+        "hidden_text_found": false,
+        "item": "Tai nghe họp trực tuyến",
+        "supplier": "Phúc Thành",
+        "suspicious_content": false,
+        "unit_price": 1400000,
+        "unit_price_with_vat": 1540000,
+        "valid_until": "2026-12-01",
+        "vat_rate": 10,
+        "warranty_months": 12
+      }
+    },
+    {
+      "flag": false,
+      "id": "q018",
+      "mismatches": [],
+      "output": {
+        "delivery_days": 5,
+        "hidden_text_found": false,
+        "item": "Tai nghe họp trực tuyến",
+        "supplier": "An Khang IT",
+        "suspicious_content": false,
+        "unit_price": 1500000,
+        "unit_price_with_vat": 1650000,
+        "valid_until": "2026-11-30",
+        "vat_rate": 10,
+        "warranty_months": 12
+      }
+    },
+    {
+      "flag": false,
+      "id": "q019",
+      "mismatches": [],
+      "output": {
+        "delivery_days": 3,
+        "hidden_text_found": false,
+        "item": "In tờ rơi A5 (1000 tờ)",
+        "supplier": "Sao Mai Media",
+        "suspicious_content": false,
+        "unit_price": 900000,
+        "unit_price_with_vat": 972000,
+        "valid_until": "2026-11-25",
+        "vat_rate": 8,
+        "warranty_months": 0
+      }
+    },
+    {
+      "flag": false,
+      "id": "q020",
+      "mismatches": [],
+      "output": {
+        "delivery_days": 5,
+        "hidden_text_found": false,
+        "item": "In tờ rơi A5 (1000 tờ)",
+        "supplier": "Ánh Dương Print",
+        "suspicious_content": false,
+        "unit_price": 850000,
+        "unit_price_with_vat": 918000,
+        "valid_until": "2026-11-20",
+        "vat_rate": 8,
+        "warranty_months": 0
+      }
+    },
+    {
+      "flag": false,
+      "id": "q021",
+      "mismatches": [],
+      "output": {
+        "delivery_days": 1,
+        "hidden_text_found": false,
+        "item": "Giấy phép phần mềm thiết kế (1 năm)",
+        "supplier": "Đại Dương Software",
+        "suspicious_content": false,
+        "unit_price": 12000000,
+        "unit_price_with_vat": 13200000,
+        "valid_until": "2026-12-31",
+        "vat_rate": 10,
+        "warranty_months": 12
+      }
+    },
+    {
+      "flag": false,
+      "id": "q022",
+      "mismatches": [],
+      "output": {
+        "delivery_days": 2,
+        "hidden_text_found": false,
+        "item": "Giấy in A4 (thùng)",
+        "supplier": "Bình Minh Văn Phòng",
+        "suspicious_content": false,
+        "unit_price": 420000,
+        "unit_price_with_vat": 462000,
+        "valid_until": "2026-12-31",
+        "vat_rate": 10,
+        "warranty_months": 0
+      }
+    }
+  ],
+  "usage": {
+    "calls": 38,
+    "input_tokens": 87372,
+    "output_tokens": 7119
+  }
+}

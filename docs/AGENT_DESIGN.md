@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Trạng thái** | Xong tuần 1 (công ty giả lập), chưa có agent |
-| **Phiên bản** | 1.16 |
+| **Phiên bản** | 1.17 |
 | **Cập nhật lần cuối** | 2026-11-04 |
 | **Việc tiếp theo** | Tuần 2: quy tắc R1–R8, MCP server, LLM cách ly |
 
@@ -992,3 +992,4 @@ Các bài dưới đây của bên thứ ba hoặc nhà cung cấp, chưa đối
 | 2026-11-04 | 1.14 | Viết `erp-mcp` với 8 tool và hợp đồng tool chung; chốt `mcp==1.30.0`; ghi quyền ghi và các trạng thái tool được chuyển |
 | 2026-11-04 | 1.15 | Viết `mail-mcp` với tool `ask_requester` |
 | 2026-11-04 | 1.16 | Viết LLM cách ly và bộ chấm; thêm `config/models.yaml`; loại chữ ẩn trong PDF; chưa chạy bằng model thật |
+| 2026-11-10 | 1.17 | Chạy LLM cách ly bằng Haiku 5.5 một lần trên 38 mẫu: email đúng 14/16 mẫu (sai 3/137 trường), báo giá đúng 22/22, không bỏ sót hay báo nhầm cờ nghi ngờ; tốn 0,0123 USD. Mẫu, đáp án và prompt đều do người làm dự án viết nên kết quả có thể đẹp hơn thực tế |
