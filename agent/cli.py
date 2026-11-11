@@ -22,7 +22,16 @@ from dotenv import load_dotenv
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
 from agent.model import estimate_cost, make_main_model
-from agent.runner import RUNS_DIR, describe_actor, open_agent, open_reader, resume_task, start_task, task_values
+from agent.runner import (
+    RUNS_DIR,
+    describe_actor,
+    is_waiting,
+    open_agent,
+    open_reader,
+    resume_task,
+    start_task,
+    task_values,
+)
 from api.human import answer_question, decide_approval, describe_pending, unresolved
 from quarantine.model import ClaudeModel, model_id_for
 from rules.errors import RuleError
@@ -44,9 +53,10 @@ def _content_text(content) -> str:
     return "".join(block.get("text", "") for block in content if isinstance(block, dict))
 
 
-def print_outcome(state: dict) -> None:
+def print_outcome(state: dict, waiting: bool | None = None) -> None:
     report = state.get("final_report")
-    if state.get("__interrupt__"):
+    # Kết quả của run và resume có khóa __interrupt__; trạng thái đọc lại từ checkpoint thì không, nên phải truyền `waiting`.
+    if waiting if waiting is not None else bool(state.get("__interrupt__")):
         print(f"ĐANG CHỜ NGƯỜI: {report['status']} - {report['summary']}")
         for id_ in state["pending_approvals"]:
             print(f"  yêu cầu #{id_} chờ duyệt")
@@ -92,9 +102,9 @@ async def _with_agent(args, action):
         return await action(graph)
 
 
-async def _read(args, task_id: str) -> dict:
+async def _read(args, task_id: str) -> tuple[dict, bool]:
     async with open_reader(args.checkpoints) as graph:
-        return await task_values(graph, task_id)
+        return await task_values(graph, task_id), await is_waiting(graph, task_id)
 
 
 def cmd_init(args) -> None:
@@ -120,13 +130,15 @@ def cmd_run(args) -> None:
 
 
 def cmd_status(args) -> None:
-    state = asyncio.run(_read(args, args.task))
+    state, paused = asyncio.run(_read(args, args.task))
+    print_outcome(state, paused)
+    if not paused:
+        return
     conn = connect(args.db)
     waiting = unresolved(conn, state["pending_approvals"], state["pending_replies"])
     for request_id in state["pending_approvals"]:
         print(json.dumps(describe_pending(conn, request_id), ensure_ascii=False))
     conn.close()
-    print_outcome(state)
     print("Còn chờ: " + ("; ".join(waiting) if waiting else "không, có thể resume"))
 
 
@@ -165,7 +177,7 @@ def cmd_resume(args) -> None:
 
 
 def cmd_trace(args) -> None:
-    print_trace(asyncio.run(_read(args, args.task)))
+    print_trace(asyncio.run(_read(args, args.task))[0])
 
 
 def main() -> None:

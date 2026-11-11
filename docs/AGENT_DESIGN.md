@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Trạng thái** | Xong tuần 2 (quy tắc, 3 MCP server, LLM cách ly), chưa có agent |
-| **Phiên bản** | 1.21 |
+| **Trạng thái** | Xong tuần 3: agent chạy trọn một yêu cầu bằng Haiku 5.5, có dừng chờ duyệt |
+| **Phiên bản** | 1.22 |
 | **Cập nhật lần cuối** | 2026-11-11 |
-| **Việc tiếp theo** | Tuần 3: đồ thị LangGraph, lớp bảo vệ, dừng chờ duyệt |
+| **Việc tiếp theo** | Tuần 4: `list_requests` sớm, bộ eval, workflow cố định, Langfuse, bật prompt cache |
 
 Đây là file duy nhất để theo dõi dự án. Mục 0 dùng để xem nhanh và giữ đúng hướng, các mục sau là thiết kế chi tiết.
 
@@ -50,7 +50,7 @@ Làm từ dưới lên. Chỉ đánh dấu khi đã đạt điều kiện hoàn 
 
 - [x] **Tuần 1, công ty giả lập:** tạo lại được dữ liệu giống hệt nhau; so sánh database phát hiện đúng thay đổi.
 - [x] **Tuần 2, tools cốt lõi:** quy tắc R1–R8, 3 MCP server gọn với 10 tool, LLM cách ly; unit test đạt và từng server chạy được khi chưa có agent.
-- [ ] **Tuần 3, bản chạy trọn vẹn đầu tiên:** một yêu cầu mua hàng đi hết từ đầu đến bản nháp đơn hàng, có duyệt và trả lời bằng dòng lệnh, xem được trace; tắt chương trình rồi tiếp tục được.
+- [x] **Tuần 3, bản chạy trọn vẹn đầu tiên:** một yêu cầu mua hàng đi hết từ đầu đến bản nháp đơn hàng, có duyệt và trả lời bằng dòng lệnh, xem được trace; tắt chương trình rồi tiếp tục được.
 - [ ] **Tuần 4, đo lường:** bộ eval, workflow cố định, gây lỗi tool, Langfuse; có điểm của workflow và bản A trên cùng tập nhỏ, biết chi phí mỗi lần chạy.
 - [ ] **Tuần 5, an toàn và đủ tool:** phân quyền, chống trùng đơn, đối chiếu kết quả, các tool còn lại; không vượt quyền hay trùng đơn trong test, chạy được các mục tiêu mở.
 - [ ] **Tuần 6, planning:** có số liệu so sánh bản B và C.
@@ -857,6 +857,9 @@ Màn hình trace cho thấy từng bước, tool đã gọi và quy tắc đã k
 | Nhiều tool ghi trong một lượt gọi | Tool ghi chạy từng cái một; kiểm thử ở tuần 3; có thể tắt gọi song song khi có tool nhạy cảm |
 | Người duyệt hoặc người yêu cầu không bao giờ phản hồi | v1 chưa tự hết hạn; hủy yêu cầu thì nhiệm vụ chạy tiếp. Thêm thời hạn nếu eval cho thấy cần |
 | Truyền `actor_id` qua MCP | Đã kiểm chứng ở tuần 3: LLM không thấy hai trường này, và nếu tự điền `actor_id` của giám đốc thì lớp bảo vệ vẫn thay bằng danh tính thật. v1 vẫn tin backend; hệ thống thật cần xác thực bằng token |
+| Mục tiêu không nêu số yêu cầu thì agent không tìm được yêu cầu, vì `list_requests` để đến tuần 5. Lần chạy thật đầu tiên, agent còn tự đoán `request_id = 0` | Làm `list_requests` ở đầu tuần 4, trước khi viết kịch bản eval; thêm vào prompt câu "không đoán số hiệu" |
+| Agent chọn báo giá rẻ nhất (Phúc Thành, hay giao trễ) thay vì cân nhắc độ tin cậy; prompt và quy tắc chưa nói nên ưu tiên gì | Đây là quyết định nghiệp vụ, người duyệt vẫn thấy cảnh báo. Khi viết kịch bản eval, phải ghi rõ kết quả nào được chấp nhận |
+| Báo cáo của agent có chỗ chưa chính xác, ví dụ ghi "R1–R7 đạt" trong khi R4, R5 không do `check_policy` kiểm tra | Node `verify` ở tuần 5 đối chiếu báo cáo với database |
 | Sai kiểu tham số bị thư viện MCP chặn trước khi vào tool, nên lỗi trả về không theo hợp đồng chung | Đã xử lý ở tuần 3: lớp bảo vệ đổi các lỗi này sang `validation` |
 | PDF scan không có lớp văn bản | v1 chỉ hỗ trợ PDF có văn bản; quyết định về OCR hoặc đọc bằng ảnh sau |
 | Chưa có mẫu email và báo giá thật | Xem mục 0.5; nếu không xin được, báo cáo rõ hạn chế này |
@@ -1005,3 +1008,4 @@ Các bài dưới đây của bên thứ ba hoặc nhà cung cấp, chưa đối
 | 2026-11-10 | 1.19 | Bắt đầu tuần 3: chốt LangGraph 1.2.20 và `langchain-mcp-adapters` 0.3.2; viết đồ thị agent ⇄ tools, model giả, `submit_final_report`; khung lớp bảo vệ và test, chờ viết phần lõi |
 | 2026-11-10 | 1.20 | Người làm dự án tự viết xong 6 hàm của lớp bảo vệ; agent chạy được vòng lặp với model giả và 3 MCP server thật |
 | 2026-11-11 | 1.21 | Thêm `wait_human`, checkpointer SQLite, duyệt và trả lời ở `api/human.py`, dòng lệnh `agent/cli.py` có trace cơ bản; với model giả, yêu cầu #1 đi được đến đơn nháp kể cả khi tắt chương trình giữa chừng. Chưa chạy bằng model thật |
+| 2026-11-11 | 1.22 | Xong tuần 3. Chạy thật bằng Haiku 5.5: mục tiêu không có số yêu cầu thì agent báo `blocked` (0,0023 USD); có số yêu cầu thì agent tự đọc 3 PDF, so 2 phương án, gửi duyệt, dừng chờ, rồi ở một tiến trình mới tạo đơn nháp sau khi được duyệt (11 lời gọi tool, 0,0085 USD, chưa bật cache) |
