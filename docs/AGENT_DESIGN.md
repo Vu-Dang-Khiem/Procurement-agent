@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Trạng thái** | Xong tuần 3: agent chạy trọn một yêu cầu bằng Haiku 5.5, có dừng chờ duyệt |
-| **Phiên bản** | 1.22 |
+| **Phiên bản** | 1.23 |
 | **Cập nhật lần cuối** | 2026-11-11 |
 | **Việc tiếp theo** | Tuần 4: `list_requests` sớm, bộ eval, workflow cố định, Langfuse, bật prompt cache |
 
@@ -455,7 +455,8 @@ Các con số này là điểm khởi đầu, sẽ chỉnh theo dữ liệu eval
 ### 4.7 Context
 
 - Giữ phần đầu prompt ổn định, chỉ thêm vào cuối, tuần tự hóa JSON theo thứ tự cố định (`sort_keys=True`).
-- Bật prompt cache khi chạy model thật. Cache mặc định hết hạn sau 5 phút không dùng, nên lần gọi đầu sau khi chờ người có thể phải ghi lại cache. Việc này tốn thêm một ít nhưng không gây lỗi. Cách bật qua `langchain-anthropic` cần kiểm tra lại khi viết code.
+- Bật prompt cache khi chạy model thật. Cache mặc định hết hạn sau 5 phút không dùng, nên lần gọi đầu sau khi chờ người có thể phải ghi lại cache. Việc này tốn thêm một ít nhưng không gây lỗi. Đã bật bằng cache tự động (`cache_control` ở cấp request, qua `model_kwargs` của `langchain-anthropic`). Lần đo đầu: 84% token vào đọc từ cache, gần như không còn token tính giá thường.
+- Khi đếm chi phí, `langchain-anthropic` báo token ghi cache trong `ephemeral_5m_input_tokens` chứ không phải `cache_creation`; `agent/model.py` cộng cả hai.
 - Giới hạn kích thước output của tool. Phần lớn lưu ngoài context và lấy lại bằng `ref`.
 - Giữ lại các lỗi và cách đã xử lý.
 
@@ -598,7 +599,7 @@ Danh sách khởi đầu. Nếu eval cho thấy agent hay chọn nhầm, sẽ g�
 | Tuần 2 | mail | `ask_requester` | Ghi nội bộ | Chỉ gửi trong công ty, tối đa 2 lần |
 | Tuần 2 | docs | `read_quotation_pdf` | Đọc | Qua Quarantined LLM |
 | Tuần 3 | nội bộ | `submit_final_report` | Agent | Phải là tool duy nhất trong lượt gọi; `waiting_approval` và `waiting_reply` chỉ hợp lệ khi có việc đang chờ tương ứng |
-| Tuần 5 | erp | `list_requests` | Đọc | Theo quyền |
+| Tuần 4 (đưa lên sớm) | erp | `list_requests` | Đọc | Theo quyền, có bộ lọc và `truncated` |
 | Tuần 5 | erp | `get_request_history` | Đọc | Theo quyền |
 | Tuần 5 | erp | `simulate_budget` | Tính toán | Không ghi dữ liệu |
 | Tuần 5 | erp | `search_suppliers` | Đọc | |
@@ -857,7 +858,7 @@ Màn hình trace cho thấy từng bước, tool đã gọi và quy tắc đã k
 | Nhiều tool ghi trong một lượt gọi | Tool ghi chạy từng cái một; kiểm thử ở tuần 3; có thể tắt gọi song song khi có tool nhạy cảm |
 | Người duyệt hoặc người yêu cầu không bao giờ phản hồi | v1 chưa tự hết hạn; hủy yêu cầu thì nhiệm vụ chạy tiếp. Thêm thời hạn nếu eval cho thấy cần |
 | Truyền `actor_id` qua MCP | Đã kiểm chứng ở tuần 3: LLM không thấy hai trường này, và nếu tự điền `actor_id` của giám đốc thì lớp bảo vệ vẫn thay bằng danh tính thật. v1 vẫn tin backend; hệ thống thật cần xác thực bằng token |
-| Mục tiêu không nêu số yêu cầu thì agent không tìm được yêu cầu, vì `list_requests` để đến tuần 5. Lần chạy thật đầu tiên, agent còn tự đoán `request_id = 0` | Làm `list_requests` ở đầu tuần 4, trước khi viết kịch bản eval; thêm vào prompt câu "không đoán số hiệu" |
+| Mục tiêu không nêu số yêu cầu thì agent không tìm được yêu cầu, vì `list_requests` để đến tuần 5. Lần chạy thật đầu tiên, agent còn tự đoán `request_id = 0` | Đã xử lý đầu tuần 4: thêm `list_requests` và câu "không tự đặt ra số hiệu" vào prompt; chạy lại cùng câu giao việc thì agent tìm được yêu cầu #1 |
 | Agent chọn báo giá rẻ nhất (Phúc Thành, hay giao trễ) thay vì cân nhắc độ tin cậy; prompt và quy tắc chưa nói nên ưu tiên gì | Đây là quyết định nghiệp vụ, người duyệt vẫn thấy cảnh báo. Khi viết kịch bản eval, phải ghi rõ kết quả nào được chấp nhận |
 | Báo cáo của agent có chỗ chưa chính xác, ví dụ ghi "R1–R7 đạt" trong khi R4, R5 không do `check_policy` kiểm tra | Node `verify` ở tuần 5 đối chiếu báo cáo với database |
 | Sai kiểu tham số bị thư viện MCP chặn trước khi vào tool, nên lỗi trả về không theo hợp đồng chung | Đã xử lý ở tuần 3: lớp bảo vệ đổi các lỗi này sang `validation` |
@@ -909,6 +910,7 @@ Màn hình trace cho thấy từng bước, tool đã gọi và quy tắc đã k
 | 2026-11-04 | Kết quả của LLM cách ly không có văn bản tự do; mặt hàng và nhà cung cấp phải nằm trong danh mục | Nội dung độc hại không có đường đi đến LLM chính, thay vì chỉ gắn nhãn không tin cậy. Đổi lại, mặt hàng hoặc nhà cung cấp mới phải được thêm vào danh mục trước |
 | 2026-11-04 | Loại chữ ẩn trong PDF bằng code trước khi gửi model | Người duyệt không thấy chữ này nên nó không được ảnh hưởng đến kết quả, và việc phát hiện không phụ thuộc vào model. Đổi lại, chữ trắng trên nền tối cũng bị loại |
 | 2026-11-04 | Model chép lại giá và ngày như in, code tính giá trước VAT và ngày hết hạn | Theo nguyên tắc phép tính do code làm, tránh model tính sai. Đổi lại, schema có thêm vài trường |
+| 2026-11-11 | Đưa `list_requests` từ tuần 5 lên đầu tuần 4 | Lần chạy thật đầu tiên cho thấy agent không tìm được yêu cầu khi mục tiêu không nêu số, mà kịch bản eval sẽ giao việc bằng câu tự nhiên. Phân quyền xem dùng chung một điều kiện với `get_request` và có test so khớp cho mọi nhân viên |
 | 2026-11-11 | Các cấp duyệt lần lượt theo thứ tự đã tạo; từ chối ở bất kỳ cấp nào thì trả lại khoản giữ chỗ | Dễ hiểu và dễ kiểm tra. Đổi lại, Finance phải chờ trưởng phòng dù có thể duyệt song song. Đây là giả định, chưa đối chiếu với quy trình thật |
 | 2026-11-11 | Sau khi chờ, agent chỉ nhận một lời báo kèm số hiệu việc đã có kết quả, rồi tự đọc lại từ hệ thống | Nội dung do người nhập không đi thẳng vào agent. Đổi lại, tốn thêm một lời gọi tool để đọc lại |
 | 2026-11-11 | Tiến độ nhiệm vụ lưu ở `runs/checkpoints.db`, tách khỏi database công ty, và không đưa lên GitHub | Tạo lại công ty giả lập không làm mất định dạng checkpoint, và dữ liệu chạy thử không lẫn vào repo |
@@ -1009,3 +1011,4 @@ Các bài dưới đây của bên thứ ba hoặc nhà cung cấp, chưa đối
 | 2026-11-10 | 1.20 | Người làm dự án tự viết xong 6 hàm của lớp bảo vệ; agent chạy được vòng lặp với model giả và 3 MCP server thật |
 | 2026-11-11 | 1.21 | Thêm `wait_human`, checkpointer SQLite, duyệt và trả lời ở `api/human.py`, dòng lệnh `agent/cli.py` có trace cơ bản; với model giả, yêu cầu #1 đi được đến đơn nháp kể cả khi tắt chương trình giữa chừng. Chưa chạy bằng model thật |
 | 2026-11-11 | 1.22 | Xong tuần 3. Chạy thật bằng Haiku 5.5: mục tiêu không có số yêu cầu thì agent báo `blocked` (0,0023 USD); có số yêu cầu thì agent tự đọc 3 PDF, so 2 phương án, gửi duyệt, dừng chờ, rồi ở một tiến trình mới tạo đơn nháp sau khi được duyệt (11 lời gọi tool, 0,0085 USD, chưa bật cache) |
+| 2026-11-11 | 1.23 | Bắt đầu tuần 4: thêm `list_requests`, sửa prompt, bật prompt cache và đếm đúng token ghi cache. Chạy lại câu giao việc không có số yêu cầu: agent tìm được yêu cầu #1 và gửi duyệt sau 8 lần gọi model, 84% token vào đọc từ cache, 0,0028 USD |

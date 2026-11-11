@@ -13,6 +13,7 @@ from datetime import date
 from mcp.server.fastmcp import FastMCP
 
 from mcp_servers.common import (
+    Partial,
     audit,
     dumps,
     load_for_actor,
@@ -25,7 +26,7 @@ from mcp_servers.common import (
 from rules import policy
 from rules.approvers import fully_approved, pick_approvers
 from rules.errors import InvalidInput, NotFound, PermissionDenied, PolicyViolation
-from rules.permissions import can_view_budget, load_actor
+from rules.permissions import can_view_budget, load_actor, request_scope
 from rules.status import ensure_transition
 from simulator.clock import SimClock, quarter_of
 
@@ -35,6 +36,12 @@ MAX_TEXT_LENGTH = 1000
 # Yêu cầu đã gửi duyệt thì không được sửa nội dung nữa.
 EDITABLE_STATUSES = ("NEW", "NEEDS_INFO", "IN_REVIEW", "REJECTED")
 PROPOSAL_STATUSES = ("NEW", "IN_REVIEW", "REJECTED")
+REQUEST_STATUSES = (
+    "APPROVED", "CANCELLED", "COMPLETED", "ESCALATED", "IN_REVIEW",
+    "NEEDS_INFO", "NEW", "PENDING_APPROVAL", "PO_DRAFTED", "REJECTED",
+)
+DEFAULT_LIST_LIMIT = 20
+MAX_LIST_LIMIT = 50
 
 mcp = FastMCP("erp", log_level="WARNING")
 tool = register_tool(mcp)
@@ -97,6 +104,76 @@ def get_request(actor_id: int, request_id: int) -> dict:
             for row in clarifications
         ],
     }
+
+
+@tool
+def list_requests(
+    actor_id: int,
+    status: str | None = None,
+    department_id: int | None = None,
+    item: str | None = None,
+    created_from: str | None = None,
+    created_to: str | None = None,
+    limit: int = DEFAULT_LIST_LIMIT,
+) -> dict:
+    """Tìm các yêu cầu mua hàng mà bạn được xem, mới nhất trước. Mọi bộ lọc đều không bắt buộc.
+
+    Dùng khi mục tiêu không nêu số yêu cầu, hoặc cần rà soát nhiều yêu cầu. Muốn xem chi tiết một yêu cầu thì dùng `get_request`.
+    `item` khớp một phần tên mặt hàng, không phân biệt hoa thường. `created_from`, `created_to` có dạng 2026-11-01, tính cả hai đầu.
+    `truncated: true` nghĩa là còn nhiều kết quả hơn `limit`: hãy thêm bộ lọc. `total` là tổng số yêu cầu khớp.
+    """
+    if status is not None and status not in REQUEST_STATUSES:
+        raise InvalidInput(f"Trạng thái {status!r} không hợp lệ", f"Các trạng thái: {', '.join(REQUEST_STATUSES)}")
+    if not 1 <= limit <= MAX_LIST_LIMIT:
+        raise InvalidInput(f"limit phải từ 1 đến {MAX_LIST_LIMIT}")
+    bounds = {}
+    for name, value in (("created_from", created_from), ("created_to", created_to)):
+        if value is not None:
+            try:
+                bounds[name] = date.fromisoformat(value).isoformat()
+            except ValueError as cause:
+                raise InvalidInput(f"Ngày {value!r} không hợp lệ", "Hãy dùng dạng 2026-11-01") from cause
+
+    with open_db() as conn:
+        scope, params = request_scope(load_actor(conn, actor_id))
+        conditions, values = [scope], list(params)
+        if status is not None:
+            conditions.append("status = ?")
+            values.append(status)
+        if department_id is not None:
+            conditions.append("department_id = ?")
+            values.append(department_id)
+        if "created_from" in bounds:
+            conditions.append("substr(created_at, 1, 10) >= ?")
+            values.append(bounds["created_from"])
+        if "created_to" in bounds:
+            conditions.append("substr(created_at, 1, 10) <= ?")
+            values.append(bounds["created_to"])
+        rows = conn.execute(
+            f"SELECT * FROM purchase_requests WHERE {' AND '.join(conditions)} ORDER BY created_at DESC, id DESC",
+            values,
+        ).fetchall()
+
+    needle = item.strip().casefold() if item else None
+    found = []
+    for row in rows:
+        extracted = json.loads(row["extracted_json"] or "{}")
+        if needle and needle not in (extracted.get("item") or "").casefold():
+            continue
+        found.append(
+            {
+                "id": row["id"],
+                "status": row["status"],
+                "department_id": row["department_id"],
+                "requester_id": row["requester_id"],
+                "item": extracted.get("item"),
+                "quantity": extracted.get("quantity"),
+                "total_amount": row["total_amount"],
+                "created_at": row["created_at"],
+            }
+        )
+    data = {"requests": found[:limit], "total": len(found)}
+    return Partial(data) if len(found) > limit else data
 
 
 @tool

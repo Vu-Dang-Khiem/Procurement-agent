@@ -2,7 +2,7 @@ import sqlite3
 
 import pytest
 
-from mcp_servers.common import DB_ENV, contract, dumps, open_db, write_transaction
+from mcp_servers.common import DB_ENV, Partial, contract, dumps, open_db, write_transaction
 from rules.errors import InvalidInput, NotFound, PermissionDenied, PolicyViolation
 from simulator.db import connect
 from simulator.seed import build_database
@@ -30,6 +30,15 @@ def test_success_follows_contract():
 )
 def test_rule_errors_follow_contract(rule_error, error_type):
     assert raising(rule_error)() == {"ok": False, "error_type": error_type, "message": "thiếu"}
+
+
+def test_partial_result_is_marked_truncated():
+    assert contract(lambda: Partial({"a": 1}, ref="doc_1"))() == {
+        "ok": True,
+        "data": {"a": 1},
+        "truncated": True,
+        "ref": "doc_1",
+    }
 
 
 def test_error_keeps_hint():

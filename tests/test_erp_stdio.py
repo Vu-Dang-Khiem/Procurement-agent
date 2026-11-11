@@ -15,6 +15,7 @@ TOOLS = {
     "get_department_budget",
     "get_quotations",
     "get_request",
+    "list_requests",
     "submit_for_approval",
     "update_request",
 }

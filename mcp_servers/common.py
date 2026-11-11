@@ -8,6 +8,7 @@ import os
 import sqlite3
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
+from dataclasses import dataclass
 from functools import wraps
 from pathlib import Path
 from typing import Any
@@ -29,6 +30,14 @@ _ERROR_TYPES = {
     PermissionDenied: "permission",
     Transient: "transient",
 }
+
+
+@dataclass(frozen=True)
+class Partial:
+    """Kết quả bị cắt bớt. Tool trả về kiểu này để hợp đồng ghi `truncated: true`."""
+
+    data: Any
+    ref: str | None = None
 
 
 def ok(data: Any, truncated: bool = False, ref: str | None = None) -> dict:
@@ -56,7 +65,10 @@ def contract(fn: Callable[..., Any]) -> Callable[..., dict]:
     @wraps(fn)
     def wrapper(*args: Any, **kwargs: Any) -> dict:
         try:
-            return ok(fn(*args, **kwargs))
+            result = fn(*args, **kwargs)
+            if isinstance(result, Partial):
+                return ok(result.data, truncated=True, ref=result.ref)
+            return ok(result)
         except RuleError as rule_error:
             return error(_ERROR_TYPES[type(rule_error)], rule_error.message, rule_error.hint)
         except sqlite3.OperationalError as db_error:

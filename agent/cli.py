@@ -21,7 +21,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
-from agent.model import estimate_cost, make_main_model
+from agent.model import cache_counts, estimate_cost, make_main_model
 from agent.runner import (
     RUNS_DIR,
     describe_actor,
@@ -72,12 +72,16 @@ def print_outcome(state: dict, waiting: bool | None = None) -> None:
 
 
 def print_trace(state: dict) -> None:
-    input_tokens = output_tokens = 0
+    input_tokens = output_tokens = cache_read = cache_write = calls = 0
     for message in state["messages"]:
         if isinstance(message, AIMessage):
             usage = message.usage_metadata or {}
+            read, write = cache_counts(usage)
+            calls += 1
             input_tokens += usage.get("input_tokens", 0)
             output_tokens += usage.get("output_tokens", 0)
+            cache_read += read
+            cache_write += write
             text = _content_text(message.content).strip()
             if text:
                 print(f"  agent: {_short(text)}")
@@ -88,8 +92,11 @@ def print_trace(state: dict) -> None:
         elif isinstance(message, HumanMessage):
             print(f"• {_short(_content_text(message.content))}")
     model_id = model_id_for("main_agent")
-    cost = estimate_cost(model_id, input_tokens, output_tokens)
-    print(f"Token: {input_tokens} vào, {output_tokens} ra" + (f", ước tính {cost:.4f} USD ({model_id})" if cost else ""))
+    cost = estimate_cost(model_id, input_tokens, output_tokens, cache_read, cache_write)
+    print(
+        f"{calls} lần gọi model. Token: {input_tokens} vào (đọc cache {cache_read}, ghi cache {cache_write}), {output_tokens} ra"
+        + (f". Ước tính {cost:.4f} USD ({model_id})" if cost is not None else "")
+    )
 
 
 def _require_key() -> None:

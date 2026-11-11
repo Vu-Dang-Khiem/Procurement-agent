@@ -33,6 +33,15 @@ def can_view_request(actor: Actor, requester_id: int, department_id: int) -> boo
     return actor.role == "head" and actor.department_id == department_id
 
 
+def request_scope(actor: Actor) -> tuple[str, tuple]:
+    """Điều kiện SQL giới hạn các yêu cầu mà người này được xem, khớp với `can_view_request`."""
+    if actor.company_wide:
+        return "1 = 1", ()
+    if actor.role == "head":
+        return "(department_id = ? OR requester_id = ?)", (actor.department_id, actor.id)
+    return "requester_id = ?", (actor.id,)
+
+
 def can_view_budget(actor: Actor, department_id: int) -> bool:
     return actor.company_wide or actor.department_id == department_id
 

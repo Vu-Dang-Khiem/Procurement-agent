@@ -99,6 +99,73 @@ def test_get_request_missing_request_or_actor(db):
     assert fails_with(server.get_request(999, 1), "not_found")
 
 
+# list_requests
+
+
+def listed(result):
+    return [row["id"] for row in result["data"]["requests"]]
+
+
+def test_staff_sees_only_own_requests(db):
+    assert sorted(listed(server.list_requests(19))) == [14, 15, 16]
+    assert listed(server.list_requests(IT_STAFF)) == [1]
+
+
+def test_head_sees_whole_department(db):
+    assert sorted(listed(server.list_requests(IT_HEAD))) == [1, 5, 9, 17]
+
+
+@pytest.mark.parametrize("actor_id", [FINANCE_STAFF, DIRECTOR, 26])
+def test_finance_and_director_see_everything(db, actor_id):
+    assert server.list_requests(actor_id, limit=50)["data"]["total"] == 19
+
+
+def test_newest_first(db):
+    ids = listed(server.list_requests(FINANCE_STAFF, limit=50))
+    created = [server.get_request(FINANCE_STAFF, id_)["data"]["created_at"] for id_ in ids]
+    assert created == sorted(created, reverse=True)
+
+
+def test_filters(db):
+    assert listed(server.list_requests(IT_STAFF, item="màn hình")) == [1]
+    assert sorted(listed(server.list_requests(DIRECTOR, item="MÀN HÌNH", limit=50))) == [1, 7, 10, 13]
+    assert sorted(listed(server.list_requests(DIRECTOR, status="PENDING_APPROVAL"))) == [5, 6]
+    assert sorted(listed(server.list_requests(DIRECTOR, department_id=SALES, status="IN_REVIEW"))) == [14, 15, 16]
+    created_today = listed(server.list_requests(DIRECTOR, created_from="2026-11-03", created_to="2026-11-03"))
+    assert sorted(created_today) == [1, 16, 17]
+
+
+def test_department_filter_cannot_widen_permission(db):
+    assert listed(server.list_requests(IT_STAFF, department_id=MARKETING)) == []
+
+
+def test_long_list_is_truncated_with_total(db):
+    result = server.list_requests(DIRECTOR, limit=5)
+    assert result["truncated"] is True
+    assert len(result["data"]["requests"]) == 5
+    assert result["data"]["total"] == 19
+    assert server.list_requests(DIRECTOR, limit=19)["truncated"] is False
+
+
+def test_list_rows_are_compact(db):
+    row = server.list_requests(IT_STAFF)["data"]["requests"][0]
+    assert set(row) == {"id", "status", "department_id", "requester_id", "item", "quantity", "total_amount", "created_at"}
+
+
+@pytest.mark.parametrize(
+    "fields",
+    [{"status": "DONE"}, {"created_from": "03/11/2026"}, {"limit": 0}, {"limit": 51}],
+)
+def test_list_rejects_bad_filters(db, fields):
+    result = server.list_requests(DIRECTOR, **fields)
+    assert fails_with(result, "validation")
+    assert result.get("hint") or "limit" in result["message"]
+
+
+def test_list_unknown_actor(db):
+    assert fails_with(server.list_requests(999), "not_found")
+
+
 # get_department_budget
 
 
