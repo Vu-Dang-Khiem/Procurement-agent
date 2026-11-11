@@ -68,6 +68,7 @@ def get_request(actor_id: int, request_id: int) -> dict:
 
     Gọi trước khi xử lý yêu cầu, và khi tool ghi báo version đã đổi. Lấy `version` ở đây để truyền cho tool ghi.
     `total_amount` đã gồm VAT, `null` nghĩa là chưa có hồ sơ đề xuất.
+    Trong câu trả lời của người yêu cầu, `item_not_in_catalog: true` nghĩa là họ nêu một mặt hàng không có trong danh mục.
     """
     with open_db() as conn:
         request = load_for_actor(conn, actor_id, request_id)

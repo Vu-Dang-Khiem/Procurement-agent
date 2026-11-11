@@ -50,8 +50,12 @@ def _validate_email_item(draft: EmailItemDraft, catalog: Catalog, received_on: d
     # Ngày cần trước khi nhận được thư là đọc sai, thường là sai năm.
     if needed_by is not None and needed_by < received_on:
         needed_by = None
+    item = _in_catalog(draft.item, catalog.items)
     return {
-        "item": _in_catalog(draft.item, catalog.items),
+        "item": item,
+        # Người viết có nêu mặt hàng nhưng không có trong danh mục. Chỉ báo cờ, không chuyển nguyên chữ,
+        # vì chữ tự do có thể chứa lệnh ẩn. Thiếu cờ này thì agent không phân biệt được "không nói" với "nói loại khác".
+        "item_not_in_catalog": draft.item is not None and item is None,
         "category": draft.category,
         "quantity": _in_range(draft.quantity, 1, MAX_QUANTITY),
         "unit_price_min": price_min,

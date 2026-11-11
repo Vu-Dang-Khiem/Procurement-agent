@@ -10,7 +10,7 @@ SCENARIOS_PATH = Path(__file__).with_name("scenarios.yaml")
 
 TOP_KEYS = {"id", "group", "actor", "goal", "setup", "human", "expect", "note"}
 EXPECT_KEYS = {
-    "status", "first_stop", "max_tool_calls", "must_call", "forbid_tools",
+    "status", "first_stop", "min_tool_calls", "must_call", "forbid_tools",
     "mention", "never_mention", "report_ids", "db",
 }
 REPORT_STATUSES = {"blocked", "completed", "waiting_approval", "waiting_reply"}

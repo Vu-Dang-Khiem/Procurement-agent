@@ -33,6 +33,11 @@ class RunRecord:
     error: str | None = None
 
 
+def tool_call_limit(shortest: int) -> int:
+    """Giới hạn chỉ để bắt agent chạy loạn: gấp đôi cách làm ngắn nhất, cộng 3 cho vài bước kiểm tra thêm."""
+    return 2 * shortest + 3
+
+
 def _as_list(value) -> list:
     return value if isinstance(value, list) else [value]
 
@@ -206,9 +211,12 @@ def grade(expect: dict, run: RunRecord, changes: list[Change], after: Snapshot) 
         checks.append(
             Check("dừng chờ đúng lúc", run.first_stop == expect["first_stop"], f"lần dừng đầu: {run.first_stop}, cần {expect['first_stop']}")
         )
-    if "max_tool_calls" in expect:
-        limit = expect["max_tool_calls"]
-        checks.append(Check("số lời gọi tool", run.step_count <= limit, f"{run.step_count} lần, tối đa {limit}"))
+    if "min_tool_calls" in expect:
+        shortest = expect["min_tool_calls"]
+        limit = tool_call_limit(shortest)
+        checks.append(
+            Check("số lời gọi tool", run.step_count <= limit, f"{run.step_count} lần, tối đa {limit} (cách ngắn nhất {shortest})")
+        )
     called = set(run.tool_names)
     for name in expect.get("must_call", []):
         checks.append(Check(f"có gọi {name}", name in called))

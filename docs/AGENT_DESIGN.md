@@ -3,9 +3,9 @@
 | | |
 |---|---|
 | **Trạng thái** | Xong tuần 3: agent chạy trọn một yêu cầu bằng Haiku 5.5, có dừng chờ duyệt |
-| **Phiên bản** | 1.25 |
+| **Phiên bản** | 1.26 |
 | **Cập nhật lần cuối** | 2026-11-11 |
-| **Việc tiếp theo** | Tuần 4: chạy thật 21 kịch bản bằng Haiku, rồi workflow cố định, gây lỗi tool, Langfuse |
+| **Việc tiếp theo** | Tuần 4: sửa agent theo kết quả eval (dùng `ask_requester` đúng chỗ, mã phòng ban) rồi so với điểm gốc 38/63; sau đó workflow cố định, gây lỗi tool, Langfuse |
 
 Đây là file duy nhất để theo dõi dự án. Mục 0 dùng để xem nhanh và giữ đúng hướng, các mục sau là thiết kế chi tiết.
 
@@ -928,6 +928,10 @@ Màn hình trace cho thấy từng bước, tool đã gọi và quy tắc đã k
 | 2026-11-04 | Yêu cầu #17 giảm từ 3 xuống 2 máy in | Với 3 máy, tổng 21,45 triệu cần 2 báo giá nhưng chỉ có 1 báo giá máy in, nên hồ sơ luôn bị R2 chặn và bẫy R5 không bao giờ xảy ra |
 | 2026-11-11 | Thêm R9: hồ sơ bị từ chối phải sửa mới gửi lại được, kiểm tra trong `check_policy` | Phát hiện khi viết kịch bản eval: hệ thống cho gửi lại y nguyên đơn vừa bị từ chối. Đặt ở server để không phụ thuộc vào việc model có nhắc lý do từ chối hay không. Đổi lại, người tạo đơn chưa gửi lại kèm lời giải thích được |
 | 2026-11-11 | Kịch bản eval: khi người giao việc chính là người tạo đơn, agent báo thẳng chứ không mở câu hỏi bằng `ask_requester` | Người đó đang trao đổi trực tiếp với agent; mở câu hỏi chính thức là đi vòng và làm đơn treo ở trạng thái chờ trả lời |
+| 2026-11-11 | LLM cách ly báo cờ `item_not_in_catalog` khi người viết nêu mặt hàng ngoài danh mục, nhưng vẫn không chuyển nguyên chữ | Lần chạy eval đầu: Châu trả lời "27 inch", LLM cách ly đổi thành rỗng mà không báo, agent tưởng Châu chưa nói loại nào. Chỉ chuyển cờ để chữ tự do không mang được lệnh ẩn tới agent |
+| 2026-11-11 | Sau lần chạy eval đầu, chỉ sửa kịch bản khi đáp án sai, và ghi lý do ngay trong kịch bản | Tránh nới đáp án cho agent qua. Ba chỗ sửa: thêm cách viết đúng ý ở s08, nâng giới hạn tool ở s14 vì agent đọc thêm PDF là hợp lý, đổi s19 sang 5 laptop vì bản cũ dựa vào báo giá có PDF cài lệnh ẩn |
+| 2026-11-11 | Giới hạn số lời gọi tool trong eval = 2 × cách làm đầy đủ ngắn nhất + 3; mỗi kịch bản ghi rõ các bước của cách ngắn nhất | Giới hạn đoán tay làm trượt cả những lần agent kiểm tra thêm hợp lý (s14, s19). Giới hạn chỉ để bắt agent chạy loạn; độ tiết kiệm đo riêng bằng số tool trung bình và chi phí |
+| 2026-11-11 | Mỗi kịch bản chạy ít nhất 3 lần, báo tỷ lệ đạt của từng kịch bản và số kịch bản đạt ở mọi lần | Hai lần chạy liền nhau với cùng agent, 6/21 kịch bản đổi kết quả. Một lần chạy không đủ để so sánh hai phiên bản |
 | 2026-11-11 | Câu giao việc trong eval do người làm dự án viết, đáp án do Claude viết từ dữ liệu | Người không viết agent dễ nghĩ ra câu làm lộ điểm yếu hơn; đáp án cần tra dữ liệu và quy tắc nên để Claude viết, người làm dự án duyệt |
 
 **Chưa áp dụng:**
@@ -1023,3 +1027,4 @@ Các bài dưới đây của bên thứ ba hoặc nhà cung cấp, chưa đối
 | 2026-11-11 | 1.23 | Bắt đầu tuần 4: thêm `list_requests`, sửa prompt, bật prompt cache và đếm đúng token ghi cache. Chạy lại câu giao việc không có số yêu cầu: agent tìm được yêu cầu #1 và gửi duyệt sau 8 lần gọi model, 84% token vào đọc từ cache, 0,0028 USD |
 | 2026-11-11 | 1.24 | Viết 21 kịch bản eval ở `evals/scenarios.yaml`. Thêm quy tắc R9 (không gửi lại y nguyên hồ sơ bị từ chối), lưu ảnh chụp hồ sơ trong `approvals.snapshot_json`. 610 test đạt |
 | 2026-11-11 | 1.25 | Viết bộ chạy và chấm kịch bản (`evals/scenarios.py`, `evals/grader.py`, `evals/run_scenarios.py`), kiểm tra bằng model giả trên các kịch bản thật, gồm luồng duyệt, từ chối và hỏi đáp. 630 test đạt. Chưa chạy bằng model thật |
+| 2026-11-11 | 1.26 | Chạy eval thật lần đầu (10/21), sửa bộ chạy và 4 đáp án sai, thêm cờ `item_not_in_catalog` cho LLM cách ly, giới hạn tool theo cách làm ngắn nhất. **Điểm gốc của agent (Haiku 5.5, mỗi kịch bản 3 lần): đạt 38/63 lần (60%), 8/21 kịch bản đạt cả 3 lần, 0,0021 USD mỗi lần chạy.** Nguyên nhân trượt: 12 lần dùng `ask_requester` sai chỗ, 6 lần thiếu yêu cầu trong báo cáo (s07, s10), 4 lần vượt số lời gọi tool, 2 lần thiếu cách viết, 1 lần thử tạo đơn hàng khi chưa duyệt |

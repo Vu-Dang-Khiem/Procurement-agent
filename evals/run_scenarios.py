@@ -53,6 +53,31 @@ class HumanStepError(Exception):
     """Bước của con người không làm được, thường vì agent không đưa yêu cầu tới đúng chỗ cần duyệt hay trả lời."""
 
 
+def _fits_waiting(conn, action: dict) -> bool:
+    """Bước của con người có khớp với việc đang thật sự chờ trong database không."""
+    kind, args = human_action(action)
+    if kind == "reply":
+        return conn.execute(
+            "SELECT 1 FROM clarifications WHERE request_id = ? AND status = 'pending'", (args["request"],)
+        ).fetchone() is not None
+    row = conn.execute("SELECT status FROM purchase_requests WHERE id = ?", (args["request"],)).fetchone()
+    return row is not None and row[0] == "PENDING_APPROVAL"
+
+
+def _next_human(conn, human: list[dict]) -> dict | None:
+    """Lấy bước con người kế tiếp khớp với việc đang chờ. Bước tùy chọn không khớp thì bỏ qua.
+
+    Bước bắt buộc không khớp thì không làm, để `human_left` báo lại: agent đã không đưa việc tới chỗ cần người.
+    """
+    while human:
+        if _fits_waiting(conn, human[0]):
+            return human.pop(0)
+        if not human[0].get("optional"):
+            return None
+        human.pop(0)
+    return None
+
+
 def _apply_human(conn, action: dict, quarantine_model) -> None:
     kind, args = human_action(action)
     try:
@@ -121,10 +146,11 @@ async def run_scenario(scenario: dict, model, quarantine_model, workdir: Path, m
                     try:
                         if not unresolved(conn, state["pending_approvals"], state["pending_replies"]):
                             break
-                        if not human:
-                            finished = True  # còn chờ nhưng kịch bản hết việc cho con người
+                        action = _next_human(conn, human)
+                        if action is None:
+                            finished = True  # còn chờ nhưng kịch bản không có bước nào khớp cho con người
                             break
-                        _apply_human(conn, human.pop(0), quarantine_model)
+                        _apply_human(conn, action, quarantine_model)
                     finally:
                         conn.close()
                 if finished:
@@ -195,9 +221,16 @@ def summarize(results: list[dict]) -> dict:
         counter["runs"] += 1
         counter["passed"] += result["passed"]
     costs = [result["cost_usd"] for result in results if result["cost_usd"] is not None]
+    per_scenario: dict[str, list[bool]] = {}
+    for result in results:
+        per_scenario.setdefault(result["id"], []).append(result["passed"])
     return {
         "runs": len(results),
         "passed": sum(result["passed"] for result in results),
+        # Mỗi kịch bản đạt bao nhiêu lần, và bao nhiêu kịch bản đạt ở mọi lần chạy (ổn định).
+        "per_scenario": {sid: f"{sum(passes)}/{len(passes)}" for sid, passes in per_scenario.items()},
+        "always_passed": sum(all(passes) for passes in per_scenario.values()),
+        "scenarios": len(per_scenario),
         "by_group": {group: dict(counter) for group, counter in sorted(by_group.items())},
         "cost_usd": round(sum(costs), 4) if costs else None,
         "avg_cost_usd": round(sum(costs) / len(costs), 5) if costs else None,
@@ -249,6 +282,10 @@ def main() -> None:
     print(f"\nĐạt {summary['passed']}/{summary['runs']}. Tổng {summary['cost_usd']} USD, trung bình {summary['avg_cost_usd']} USD mỗi lần.")
     for group, counter in summary["by_group"].items():
         print(f"  {group}: {counter['passed']}/{counter['runs']}")
+    if args.repeat > 1:
+        print(f"Đạt ở mọi lần chạy: {summary['always_passed']}/{summary['scenarios']} kịch bản")
+        for sid, rate in summary["per_scenario"].items():
+            print(f"  {rate} {sid}")
     q = quarantine_model.usage
     REPORT_DIR.mkdir(exist_ok=True)
     report = REPORT_DIR / f"scenarios_{model_id}_{stamp}.json"

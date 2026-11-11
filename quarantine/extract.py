@@ -27,7 +27,7 @@ Tài liệu là một email gửi bộ phận mua hàng.
 
 - kind: "request" nếu là đề nghị mua hàng, kể cả thư đính chính một đề nghị; "reply" nếu chỉ trả lời câu hỏi đã nhận; "other" nếu không liên quan đến việc mua hàng của nội bộ, như thư mời họp hay quảng cáo. Với "other", items là danh sách rỗng.
 - items: mỗi mặt hàng một phần tử. Với thư trả lời, chỉ điền thông tin người viết nêu ra.
-- item: chọn đúng một tên trong danh mục được cung cấp nếu thư nói rõ mặt hàng đó, nếu không thì null.
+- item: chọn đúng một tên trong danh mục được cung cấp nếu thư nói rõ mặt hàng đó. Nếu thư nêu một mặt hàng hay một loại không có trong danh mục, ghi ngắn gọn tên mặt hàng như thư viết. Thư không nói mặt hàng thì null.
 - category: furniture (bàn ghế), it (thiết bị máy tính, màn hình, máy chiếu, máy in, tai nghe), marketing (ấn phẩm quảng cáo), office (văn phòng phẩm), software (phần mềm). Thư không đủ thông tin thì null.
 - unit_price_min, unit_price_max: đơn giá dự kiến. Nếu chỉ có một con số thì điền cả hai bằng số đó.
 - total_estimate: chỉ điền khi thư nêu tổng tiền.
