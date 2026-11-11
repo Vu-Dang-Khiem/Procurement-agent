@@ -11,7 +11,7 @@ from quarantine.extract import extract_email, load_catalog
 from quarantine.model import ExtractionModel
 from rules.errors import InvalidInput, NotFound, PermissionDenied, PolicyViolation
 from rules.permissions import can_decide
-from rules.policy import load_request
+from rules.policy import load_request, snapshot_of_request
 from simulator.clock import SimClock, quarter_of
 
 DECISIONS = ("approved", "rejected")
@@ -53,9 +53,11 @@ def decide_approval(
                 f"Lượt hiện tại là cấp {turn['level']}, do nhân viên #{turn['approver_id']} duyệt",
             )
         now = SimClock(conn).now_iso()
+        # Lưu hồ sơ bị từ chối để R9 chặn việc gửi lại y nguyên.
+        snapshot = snapshot_of_request(request) if decision == "rejected" else None
         conn.execute(
-            "UPDATE approvals SET decision = ?, reason = ?, decided_at = ? WHERE id = ?",
-            (decision, reason, now, turn["id"]),
+            "UPDATE approvals SET decision = ?, reason = ?, decided_at = ?, snapshot_json = ? WHERE id = ?",
+            (decision, reason, now, dumps(snapshot) if snapshot else None, turn["id"]),
         )
         remaining = conn.execute(
             "SELECT COUNT(*) FROM approvals WHERE request_id = ? AND decision IS NULL", (request_id,)

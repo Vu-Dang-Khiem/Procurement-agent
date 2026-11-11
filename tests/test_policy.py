@@ -55,7 +55,7 @@ def test_clean_proposal_passes_every_rule(conn):
     assert result.total_amount == 7_150_000
     assert result.violations == []
     assert result.flags == []
-    assert result.passed == ["R1", "R2", "R3", "R6", "R7", "R8"]
+    assert result.passed == ["R1", "R2", "R3", "R6", "R7", "R8", "R9"]
 
 
 def test_r1_blocks_request_over_budget(conn):
@@ -158,6 +158,39 @@ def test_r8_not_flagged_when_sum_stays_in_same_tier(conn):
 
 def test_flags_do_not_block_submission(conn):
     assert violated(check_policy(conn, 16, 16, [16])) == []
+
+
+def test_r9_blocks_resubmitting_rejected_proposal_unchanged(conn):
+    # Yêu cầu 8 bị Finance từ chối với 10 cái, báo giá 9 được chọn trong [9, 10].
+    result = check_policy(conn, 8, 9, [10, 9])
+    assert violated(result) == ["R9"]
+    message = result.violations[0].message
+    assert "Giảm còn 6 cái" in message
+
+
+@pytest.mark.parametrize(
+    ("change", "selected", "quotes"),
+    [("quantity", 9, [9, 10]), (None, 10, [9, 10]), (None, 9, [9])],
+)
+def test_r9_passes_once_something_changed(conn, change, selected, quotes):
+    if change == "quantity":
+        with conn:
+            conn.execute(
+                "UPDATE purchase_requests SET extracted_json = json_set(extracted_json, '$.quantity', 6) WHERE id = 8"
+            )
+    assert "R9" not in violated(check_policy(conn, 8, selected, quotes))
+
+
+def test_r9_only_compares_with_latest_rejection(conn):
+    # Lần từ chối mới hơn với hồ sơ khác: hồ sơ cũ giờ gửi lại được.
+    with conn:
+        conn.execute(
+            "INSERT INTO approvals (request_id, level, approver_id, decision, reason, decided_at, snapshot_json)"
+            " VALUES (8, 'finance', 28, 'rejected', 'Đổi nhà cung cấp', '2026-11-03T08:00:00', ?)",
+            (json.dumps({"item": "Máy chiếu", "quantity": 10, "selected_quotation_id": 10, "quotation_ids": [9, 10]}),),
+        )
+    assert "R9" not in violated(check_policy(conn, 8, 9, [9, 10]))
+    assert "R9" in violated(check_policy(conn, 8, 10, [9, 10]))
 
 
 def test_check_policy_writes_nothing(conn):

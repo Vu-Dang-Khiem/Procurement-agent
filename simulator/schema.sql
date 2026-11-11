@@ -76,6 +76,8 @@ CREATE TABLE approvals (
     decision    TEXT CHECK (decision IN ('approved', 'rejected')),  -- NULL là đang chờ
     reason      TEXT,
     decided_at  TEXT,
+    -- Hồ sơ lúc bị từ chối (mặt hàng, số lượng, báo giá), để R9 chặn việc gửi lại y nguyên.
+    snapshot_json TEXT CHECK (snapshot_json IS NULL OR json_valid(snapshot_json)),
     CHECK ((decision IS NULL) = (decided_at IS NULL))
 ) STRICT;
 

@@ -10,6 +10,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+from rules.policy import proposal_snapshot
 from simulator.clock import SimClock
 from simulator.db import connect, create_schema
 
@@ -208,6 +209,17 @@ def _request_row(row: tuple) -> tuple:
     return (id_, requester, department, "form", _dumps(extracted), proposal, status, total, created, updated)
 
 
+def _approval_row(row: tuple) -> tuple:
+    """Dòng từ chối kèm ảnh chụp hồ sơ lúc đó, như `decide_approval` lưu, để R9 có cái mà so sánh."""
+    request_id, _, _, decision, _, _ = row
+    snapshot = None
+    if decision == "rejected":
+        request = REQUESTS[request_id - 1]
+        quotes = request[8]
+        snapshot = _dumps(proposal_snapshot(request[4], request[6], quotes[0], list(quotes)))
+    return (*row, snapshot)
+
+
 def _purchase_order_row(request_id: int, status: str) -> tuple:
     request = REQUESTS[request_id - 1]
     selected = request[8][0]
@@ -242,9 +254,9 @@ def seed(conn: sqlite3.Connection) -> None:
             [_request_row(row) for row in REQUESTS],
         )
         conn.executemany(
-            "INSERT INTO approvals (request_id, level, approver_id, decision, reason, decided_at)"
-            " VALUES (?, ?, ?, ?, ?, ?)",
-            APPROVALS,
+            "INSERT INTO approvals (request_id, level, approver_id, decision, reason, decided_at, snapshot_json)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?)",
+            [_approval_row(row) for row in APPROVALS],
         )
         conn.executemany(
             "INSERT INTO clarifications (request_id, question, asked_at) VALUES (?, ?, ?)",

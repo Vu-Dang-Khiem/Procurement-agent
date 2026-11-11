@@ -248,7 +248,7 @@ def get_quotations(item: str) -> dict:
 
 @tool
 def check_policy(actor_id: int, request_id: int, selected_quotation_id: int, quotation_ids: list[int]) -> dict:
-    """Thử một phương án đề xuất với các quy tắc R1–R8, không ghi gì. Dùng để so sánh trước khi tạo hồ sơ.
+    """Thử một phương án đề xuất với các quy tắc R1–R9, không ghi gì. Dùng để so sánh trước khi tạo hồ sơ.
 
     `quotation_ids` là mọi báo giá đưa vào hồ sơ, gồm cả báo giá được chọn.
     `violations` phải được xử lý thì mới gửi duyệt được. `flags` là dấu hiệu nghi ngờ, không chặn việc gửi duyệt.

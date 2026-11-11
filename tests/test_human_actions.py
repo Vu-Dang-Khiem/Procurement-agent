@@ -1,5 +1,7 @@
 """Duyệt, từ chối và trả lời câu hỏi ở phía backend. Dùng model giả cho LLM cách ly."""
 
+import json
+
 import pytest
 from quarantine_fakes import FakeModel
 
@@ -80,8 +82,31 @@ def test_rejection_needs_reason_and_releases_budget(submitted):
     result = decide_approval(submitted, 1, HEAD, "rejected", "Giảm số lượng")
     assert result["status"] == "REJECTED"
     assert reserved(submitted) == RESERVED_BEFORE
-    row = submitted.execute("SELECT reason FROM approvals WHERE request_id = 1 AND decision = 'rejected'").fetchone()
+    row = submitted.execute(
+        "SELECT reason, snapshot_json FROM approvals WHERE request_id = 1 AND decision = 'rejected'"
+    ).fetchone()
     assert row[0] == "Giảm số lượng"
+    assert json.loads(row[1]) == {
+        "item": "Màn hình 24 inch", "quantity": 10, "selected_quotation_id": 2, "quotation_ids": [1, 2]
+    }
+
+
+def test_rejected_proposal_cannot_be_resubmitted_unchanged(submitted):
+    # R9: sau khi bị từ chối, gửi lại y nguyên bị chặn; sửa số lượng thì được.
+    decide_approval(submitted, 1, HEAD, "rejected", "Giảm số lượng")
+    version = erp.create_proposal(STAFF, 1, erp.get_request(STAFF, 1)["data"]["version"], 2, [1, 2])["data"]["version"]
+    blocked = erp.submit_for_approval(STAFF, 1, version)
+    assert blocked["error_type"] == "policy"
+    assert "R9" in blocked["message"]
+    version = erp.update_request(STAFF, 1, version, quantity=8)["data"]["version"]
+    version = erp.create_proposal(STAFF, 1, version, 2, [1, 2])["data"]["version"]
+    assert erp.submit_for_approval(STAFF, 1, version)["ok"]
+
+
+def test_approval_stores_no_snapshot(submitted):
+    decide_approval(submitted, 1, HEAD, "approved")
+    row = submitted.execute("SELECT snapshot_json FROM approvals WHERE request_id = 1 AND decision = 'approved'").fetchone()
+    assert row[0] is None
 
 
 def test_decision_bumps_version_so_old_agent_writes_fail(submitted):

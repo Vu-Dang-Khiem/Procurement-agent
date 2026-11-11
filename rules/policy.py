@@ -1,6 +1,7 @@
-"""Quy tắc mua hàng R1, R2, R3, R6, R7, R8. R4 và R5 nằm trong `rules/approvers.py`.
+"""Quy tắc mua hàng R1, R2, R3, R6, R7, R8, R9. R4 và R5 nằm trong `rules/approvers.py`.
 
-R1, R2, R3, R7 là vi phạm, chặn việc gửi duyệt. R6, R8 chỉ là dấu hiệu nghi ngờ để người duyệt xem xét.
+R1, R2, R3, R7, R9 là vi phạm, chặn việc gửi duyệt. R6, R8 chỉ là dấu hiệu nghi ngờ để người duyệt xem xét.
+R9: hồ sơ bị từ chối phải được sửa (số lượng, mặt hàng hoặc báo giá) thì mới gửi lại được.
 """
 
 import json
@@ -134,6 +135,41 @@ def _check_split(related: list[tuple[sqlite3.Row, dict]], category: str | None, 
     )
 
 
+def proposal_snapshot(item: str | None, quantity: int | None, selected_quotation_id: int, quotation_ids: list[int]) -> dict:
+    """Những gì của hồ sơ mà người duyệt đã xem. Thứ tự báo giá không quan trọng."""
+    return {
+        "item": item,
+        "quantity": quantity,
+        "selected_quotation_id": selected_quotation_id,
+        "quotation_ids": sorted(set(quotation_ids)),
+    }
+
+
+def snapshot_of_request(request: sqlite3.Row) -> dict | None:
+    """Ảnh chụp hồ sơ hiện tại của yêu cầu, để lưu lúc bị từ chối. None nếu yêu cầu chưa có hồ sơ."""
+    if request["proposal_json"] is None:
+        return None
+    extracted = json.loads(request["extracted_json"] or "{}")
+    proposal = json.loads(request["proposal_json"])
+    return proposal_snapshot(
+        extracted.get("item"), extracted.get("quantity"), proposal["selected_quotation_id"], proposal["quotation_ids"]
+    )
+
+
+def _check_resubmission(conn: sqlite3.Connection, request_id: int, current: dict) -> Finding | None:
+    last = conn.execute(
+        "SELECT reason, snapshot_json FROM approvals WHERE request_id = ? AND decision = 'rejected'"
+        " ORDER BY id DESC LIMIT 1",
+        (request_id,),
+    ).fetchone()
+    if last is None or last["snapshot_json"] is None or json.loads(last["snapshot_json"]) != current:
+        return None
+    return Finding(
+        "R9",
+        f"Hồ sơ giống hệt lần bị từ chối (lý do: {last['reason']}). Phải sửa số lượng hoặc báo giá rồi mới gửi lại",
+    )
+
+
 def _ids(request_ids: list[int]) -> str:
     return ", ".join(f"#{request_id}" for request_id in request_ids)
 
@@ -174,6 +210,7 @@ def check_policy(
         "R2": None,
         "R3": None,
         "R7": None,
+        "R9": _check_resubmission(conn, request_id, proposal_snapshot(item, quantity, selected_quotation_id, quotation_ids)),
     }
     needed = required_quotes(total)
     if len(usable_suppliers) < needed:

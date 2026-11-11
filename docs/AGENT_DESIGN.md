@@ -3,9 +3,9 @@
 | | |
 |---|---|
 | **Trạng thái** | Xong tuần 3: agent chạy trọn một yêu cầu bằng Haiku 5.5, có dừng chờ duyệt |
-| **Phiên bản** | 1.23 |
+| **Phiên bản** | 1.24 |
 | **Cập nhật lần cuối** | 2026-11-11 |
-| **Việc tiếp theo** | Tuần 4: `list_requests` sớm, bộ eval, workflow cố định, Langfuse, bật prompt cache |
+| **Việc tiếp theo** | Tuần 4: bộ chạy và chấm cho 21 kịch bản đã viết, workflow cố định, gây lỗi tool, Langfuse |
 
 Đây là file duy nhất để theo dõi dự án. Mục 0 dùng để xem nhanh và giữ đúng hướng, các mục sau là thiết kế chi tiết.
 
@@ -418,7 +418,7 @@ Rủi ro còn lại: Quarantined LLM vẫn có thể bị lừa để điền sa
 
 **Lớp 2: Quy tắc trong tool**
 
-- Quy tắc R1–R8 chạy trong code của MCP server.
+- Quy tắc R1–R9 chạy trong code của MCP server.
 - Trạng thái yêu cầu chỉ được chuyển theo các bước hợp lệ.
 - `create_po_draft` tự kiểm tra đơn đã đủ các cấp duyệt chưa.
 
@@ -529,12 +529,14 @@ Một công ty hư cấu gồm 5 phòng ban (IT, HR, Sales, Marketing, Finance),
 | R6 | Cùng phòng ban và mặt hàng trong 14 ngày: đánh dấu nghi trùng |
 | R7 | Không dùng báo giá đã hết hạn |
 | R8 | Nhiều yêu cầu cùng phòng ban và nhóm hàng trong 14 ngày, tổng vượt ngưỡng cao hơn: đánh dấu nghi chia nhỏ đơn |
+| R9 | Hồ sơ bị từ chối phải sửa mặt hàng, số lượng hoặc báo giá thì mới gửi lại được |
 
 Ngân sách được giữ chỗ (`reserved`) khi gửi duyệt và trả lại khi bị từ chối hoặc hủy. Thao tác này chạy trong transaction để hai yêu cầu không cùng dùng một khoản ngân sách.
 
 **Cách áp dụng trong code (`rules/`):**
 
-- R1, R2, R3, R7 là vi phạm, chặn việc gửi duyệt. R6, R8 chỉ là dấu hiệu nghi ngờ để người duyệt xem xét.
+- R1, R2, R3, R7, R9 là vi phạm, chặn việc gửi duyệt. R6, R8 chỉ là dấu hiệu nghi ngờ để người duyệt xem xét.
+- R9: lúc từ chối, `decide_approval` lưu ảnh chụp hồ sơ (mặt hàng, số lượng, báo giá được chọn, tập báo giá) vào dòng `approvals`. `check_policy` so hồ sơ mới với lần từ chối gần nhất, giống hệt thì báo vi phạm kèm lý do từ chối.
 - R2 đếm báo giá trong `proposal_json`, chỉ tính báo giá còn hạn của nhà cung cấp được duyệt, và nhiều báo giá của cùng một nhà cung cấp chỉ tính là một.
 - R3 và R7 xét mọi báo giá trong hồ sơ, không chỉ báo giá được chọn. Báo giá vẫn còn hiệu lực trong ngày `valid_until`.
 - R5: trưởng phòng tự tạo yêu cầu thì giám đốc duyệt thay, kể cả khi số tiền chưa đến ngưỡng của giám đốc. Không còn ai đủ thẩm quyền thì trả lỗi `policy`.
@@ -637,6 +639,8 @@ Danh sách khởi đầu. Nếu eval cho thấy agent hay chọn nhầm, sẽ g�
 - **Chạy lặp lại** vì LLM không hoàn toàn ổn định. Cách chạy theo từng giai đoạn ở mục 7.5, để kiểm soát chi phí.
 - **Kịch bản do người ngoài viết** (nếu có) được ưu tiên đưa vào bộ giữ riêng, và báo cáo điểm tách riêng.
 - **Nếu làm Memory**, thêm các kịch bản nhiều phiên làm việc nối tiếp nhau.
+
+**Tiến độ (2026-11-11):** 21 kịch bản, gồm 4 luồng có con người chen giữa (từ chối giữa chừng, hỏi và trả lời), trong [evals/scenarios.yaml](../evals/scenarios.yaml). Câu giao việc do người làm dự án viết theo giọng nhân viên thật (viết tắt, không dấu, có câu lừa); Claude điền số đơn theo dữ liệu và viết đáp án, người làm dự án duyệt. Định dạng trong file là bản đang dùng, ví dụ dưới đây là bản thiết kế ban đầu.
 
 ### 7.2 Chấm bằng so sánh database
 
@@ -791,7 +795,7 @@ procurement-agent/
 ├── docs/
 │   └── AGENT_DESIGN.md       # tài liệu này
 ├── simulator/                # schema, seed, đồng hồ giả lập, email, PDF
-├── rules/                    # R1–R8, phân quyền, chuyển trạng thái
+├── rules/                    # R1–R9, phân quyền, chuyển trạng thái
 ├── mcp_servers/
 │   ├── common.py             # hợp đồng tool, kết nối database, audit log
 │   ├── erp/
@@ -920,6 +924,9 @@ Màn hình trace cho thấy từng bước, tool đã gọi và quy tắc đã k
 | 2026-11-10 | `read_quotation_pdf` đối chiếu kết quả đọc với dữ liệu báo giá và trả `mismatches`, nhưng không tự sửa bên nào | Phát hiện được file gốc khác hệ thống mà agent không phải đọc văn bản gốc. Quyết định bên nào đúng thuộc về người duyệt |
 | 2026-11-10 | `docs-mcp` lưu kết quả đọc theo nội dung file, trong bộ nhớ của tiến trình | Đọc lại cùng một file không tốn thêm lần gọi model. Đổi lại, tắt server thì mất kết quả đã lưu, và lỗi tạm thời không được lưu |
 | 2026-11-04 | Yêu cầu #17 giảm từ 3 xuống 2 máy in | Với 3 máy, tổng 21,45 triệu cần 2 báo giá nhưng chỉ có 1 báo giá máy in, nên hồ sơ luôn bị R2 chặn và bẫy R5 không bao giờ xảy ra |
+| 2026-11-11 | Thêm R9: hồ sơ bị từ chối phải sửa mới gửi lại được, kiểm tra trong `check_policy` | Phát hiện khi viết kịch bản eval: hệ thống cho gửi lại y nguyên đơn vừa bị từ chối. Đặt ở server để không phụ thuộc vào việc model có nhắc lý do từ chối hay không. Đổi lại, người tạo đơn chưa gửi lại kèm lời giải thích được |
+| 2026-11-11 | Kịch bản eval: khi người giao việc chính là người tạo đơn, agent báo thẳng chứ không mở câu hỏi bằng `ask_requester` | Người đó đang trao đổi trực tiếp với agent; mở câu hỏi chính thức là đi vòng và làm đơn treo ở trạng thái chờ trả lời |
+| 2026-11-11 | Câu giao việc trong eval do người làm dự án viết, đáp án do Claude viết từ dữ liệu | Người không viết agent dễ nghĩ ra câu làm lộ điểm yếu hơn; đáp án cần tra dữ liệu và quy tắc nên để Claude viết, người làm dự án duyệt |
 
 **Chưa áp dụng:**
 
@@ -1012,3 +1019,4 @@ Các bài dưới đây của bên thứ ba hoặc nhà cung cấp, chưa đối
 | 2026-11-11 | 1.21 | Thêm `wait_human`, checkpointer SQLite, duyệt và trả lời ở `api/human.py`, dòng lệnh `agent/cli.py` có trace cơ bản; với model giả, yêu cầu #1 đi được đến đơn nháp kể cả khi tắt chương trình giữa chừng. Chưa chạy bằng model thật |
 | 2026-11-11 | 1.22 | Xong tuần 3. Chạy thật bằng Haiku 5.5: mục tiêu không có số yêu cầu thì agent báo `blocked` (0,0023 USD); có số yêu cầu thì agent tự đọc 3 PDF, so 2 phương án, gửi duyệt, dừng chờ, rồi ở một tiến trình mới tạo đơn nháp sau khi được duyệt (11 lời gọi tool, 0,0085 USD, chưa bật cache) |
 | 2026-11-11 | 1.23 | Bắt đầu tuần 4: thêm `list_requests`, sửa prompt, bật prompt cache và đếm đúng token ghi cache. Chạy lại câu giao việc không có số yêu cầu: agent tìm được yêu cầu #1 và gửi duyệt sau 8 lần gọi model, 84% token vào đọc từ cache, 0,0028 USD |
+| 2026-11-11 | 1.24 | Viết 21 kịch bản eval ở `evals/scenarios.yaml`. Thêm quy tắc R9 (không gửi lại y nguyên hồ sơ bị từ chối), lưu ảnh chụp hồ sơ trong `approvals.snapshot_json`. 610 test đạt |

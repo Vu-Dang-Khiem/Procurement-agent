@@ -557,8 +557,9 @@ def test_rejected_request_can_be_fixed_and_resubmitted(db):
 def test_resubmit_removes_leftover_pending_approval(db):
     with db:
         db.execute("INSERT INTO approvals (request_id, level, approver_id) VALUES (8, 'director', 30)")
-    version = server.create_proposal(21, 8, 1, 9, [9, 10])["data"]["version"]
-    server.submit_for_approval(21, 8, version)
+    # Chọn báo giá 10 thay cho 9, vì R9 chặn gửi lại y nguyên hồ sơ đã bị từ chối.
+    version = server.create_proposal(21, 8, 1, 10, [9, 10])["data"]["version"]
+    assert server.submit_for_approval(21, 8, version)["ok"]
     pending = db.execute("SELECT level FROM approvals WHERE request_id = 8 AND decision IS NULL").fetchall()
     assert [row[0] for row in pending] == ["head", "finance"]
 
