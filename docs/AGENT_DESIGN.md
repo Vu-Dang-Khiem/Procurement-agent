@@ -3,8 +3,8 @@
 | | |
 |---|---|
 | **Trạng thái** | Xong tuần 2 (quy tắc, 3 MCP server, LLM cách ly), chưa có agent |
-| **Phiên bản** | 1.20 |
-| **Cập nhật lần cuối** | 2026-11-10 |
+| **Phiên bản** | 1.21 |
+| **Cập nhật lần cuối** | 2026-11-11 |
 | **Việc tiếp theo** | Tuần 3: đồ thị LangGraph, lớp bảo vệ, dừng chờ duyệt |
 
 Đây là file duy nhất để theo dõi dự án. Mục 0 dùng để xem nhanh và giữ đúng hướng, các mục sau là thiết kế chi tiết.
@@ -906,6 +906,9 @@ Màn hình trace cho thấy từng bước, tool đã gọi và quy tắc đã k
 | 2026-11-04 | Kết quả của LLM cách ly không có văn bản tự do; mặt hàng và nhà cung cấp phải nằm trong danh mục | Nội dung độc hại không có đường đi đến LLM chính, thay vì chỉ gắn nhãn không tin cậy. Đổi lại, mặt hàng hoặc nhà cung cấp mới phải được thêm vào danh mục trước |
 | 2026-11-04 | Loại chữ ẩn trong PDF bằng code trước khi gửi model | Người duyệt không thấy chữ này nên nó không được ảnh hưởng đến kết quả, và việc phát hiện không phụ thuộc vào model. Đổi lại, chữ trắng trên nền tối cũng bị loại |
 | 2026-11-04 | Model chép lại giá và ngày như in, code tính giá trước VAT và ngày hết hạn | Theo nguyên tắc phép tính do code làm, tránh model tính sai. Đổi lại, schema có thêm vài trường |
+| 2026-11-11 | Các cấp duyệt lần lượt theo thứ tự đã tạo; từ chối ở bất kỳ cấp nào thì trả lại khoản giữ chỗ | Dễ hiểu và dễ kiểm tra. Đổi lại, Finance phải chờ trưởng phòng dù có thể duyệt song song. Đây là giả định, chưa đối chiếu với quy trình thật |
+| 2026-11-11 | Sau khi chờ, agent chỉ nhận một lời báo kèm số hiệu việc đã có kết quả, rồi tự đọc lại từ hệ thống | Nội dung do người nhập không đi thẳng vào agent. Đổi lại, tốn thêm một lời gọi tool để đọc lại |
+| 2026-11-11 | Tiến độ nhiệm vụ lưu ở `runs/checkpoints.db`, tách khỏi database công ty, và không đưa lên GitHub | Tạo lại công ty giả lập không làm mất định dạng checkpoint, và dữ liệu chạy thử không lẫn vào repo |
 | 2026-11-10 | Giữ một phiên MCP mở cho mỗi server suốt nhiệm vụ, không dùng `get_tools()` mặc định | Mặc định mỗi lời gọi tool khởi động lại server: chậm và docs-mcp mất kết quả đã lưu. Đổi lại, phải tự mở và đóng phiên |
 | 2026-11-10 | Bỏ `actor_id` và `task_id` khỏi mô tả tool gửi cho LLM; lớp bảo vệ vẫn ghi đè hai trường này | LLM không cần điền và không có chỗ để giả danh, đỡ tốn token. Ghi đè vẫn giữ để phòng LLM tự thêm vào |
 | 2026-11-10 | Lớp bảo vệ chia thành 6 hàm nhỏ do người làm dự án tự viết, node tools ghép chúng lại | Tự viết phần lõi để hiểu và bảo vệ được khi phỏng vấn; hàm nhỏ thì test riêng từng quy tắc được |
@@ -1001,3 +1004,4 @@ Các bài dưới đây của bên thứ ba hoặc nhà cung cấp, chưa đối
 | 2026-11-10 | 1.18 | Viết `docs-mcp` với tool `read_quotation_pdf`; xong tuần 2 |
 | 2026-11-10 | 1.19 | Bắt đầu tuần 3: chốt LangGraph 1.2.20 và `langchain-mcp-adapters` 0.3.2; viết đồ thị agent ⇄ tools, model giả, `submit_final_report`; khung lớp bảo vệ và test, chờ viết phần lõi |
 | 2026-11-10 | 1.20 | Người làm dự án tự viết xong 6 hàm của lớp bảo vệ; agent chạy được vòng lặp với model giả và 3 MCP server thật |
+| 2026-11-11 | 1.21 | Thêm `wait_human`, checkpointer SQLite, duyệt và trả lời ở `api/human.py`, dòng lệnh `agent/cli.py` có trace cơ bản; với model giả, yêu cầu #1 đi được đến đơn nháp kể cả khi tắt chương trình giữa chừng. Chưa chạy bằng model thật |

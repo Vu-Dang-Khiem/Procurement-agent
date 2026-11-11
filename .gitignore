@@ -14,5 +14,8 @@ __pycache__/
 *.sqlite
 *.sqlite3
 
+# Database và tiến độ nhiệm vụ khi chạy thử bằng dòng lệnh
+runs/
+
 # Ghi chú cá nhân, không đẩy lên GitHub
 *.local.md

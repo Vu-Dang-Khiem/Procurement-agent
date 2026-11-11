@@ -34,16 +34,29 @@ def _connections(db_path: str | Path) -> dict:
     }
 
 
+def _single_cause(group: BaseExceptionGroup) -> BaseException | None:
+    while isinstance(group, BaseExceptionGroup) and len(group.exceptions) == 1:
+        group = group.exceptions[0]
+    return None if isinstance(group, BaseExceptionGroup) else group
+
+
 @asynccontextmanager
 async def open_mcp_tools(db_path: str | Path) -> AsyncIterator[dict[str, BaseTool]]:
     """Mở phiên với cả 3 server và trả về các tool theo tên, sắp xếp theo tên. Đóng phiên khi ra khỏi khối."""
     client = MultiServerMCPClient(_connections(db_path))
-    async with AsyncExitStack() as stack:
-        tools: dict[str, BaseTool] = {}
-        for name in SERVERS:
-            session = await stack.enter_async_context(client.session(name))
-            for tool in await load_mcp_tools(session, server_name=name):
-                if tool.name in tools:
-                    raise ValueError(f"Hai server cùng có tool {tool.name}")
-                tools[tool.name] = tool
-        yield dict(sorted(tools.items()))
+    try:
+        async with AsyncExitStack() as stack:
+            tools: dict[str, BaseTool] = {}
+            for name in SERVERS:
+                session = await stack.enter_async_context(client.session(name))
+                for tool in await load_mcp_tools(session, server_name=name):
+                    if tool.name in tools:
+                        raise ValueError(f"Hai server cùng có tool {tool.name}")
+                    tools[tool.name] = tool
+            yield dict(sorted(tools.items()))
+    except BaseExceptionGroup as group:
+        # Thư viện MCP bọc mọi lỗi xảy ra trong khối thành nhóm lỗi. Trả lại đúng lỗi gốc để dễ đọc và dễ bắt.
+        cause = _single_cause(group)
+        if cause is None:
+            raise
+        raise cause from None

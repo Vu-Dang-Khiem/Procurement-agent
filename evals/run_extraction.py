@@ -12,6 +12,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+from agent.model import estimate_cost
 from evals.extraction_answers import EMAIL_ANSWERS, QUOTE_ANSWERS
 from evals.grade_extraction import EMAIL_ITEM_FIELDS, QUOTE_FIELDS, Grade, Summary, grade_email, grade_quote
 from quarantine.extract import extract_email, extract_quote, load_catalog
@@ -22,13 +23,10 @@ from simulator.quotes import DATA_DIR, source_file
 from simulator.seed import build_database
 
 REPORT_DIR = Path(__file__).with_name("reports")
-# USD cho 1 triệu token (vào, ra), đọc từ trang giá ngày 2026-11-03. Cần kiểm tra lại khi đổi model.
-PRICES = {"claude-haiku-5-5": (0.10, 0.50), "claude-sonnet-5-5": (2.00, 10.00)}
 
 
 def cost_of(model: ClaudeModel) -> float:
-    input_price, output_price = PRICES[model.model_id]
-    return (model.usage.input_tokens * input_price + model.usage.output_tokens * output_price) / 1_000_000
+    return estimate_cost(model.model_id, model.usage.input_tokens, model.usage.output_tokens)
 
 
 def _email_samples(model, catalog):
