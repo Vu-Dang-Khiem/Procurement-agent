@@ -3,9 +3,9 @@
 | | |
 |---|---|
 | **Trạng thái** | Xong tuần 3: agent chạy trọn một yêu cầu bằng Haiku 5.5, có dừng chờ duyệt |
-| **Phiên bản** | 1.24 |
+| **Phiên bản** | 1.25 |
 | **Cập nhật lần cuối** | 2026-11-11 |
-| **Việc tiếp theo** | Tuần 4: bộ chạy và chấm cho 21 kịch bản đã viết, workflow cố định, gây lỗi tool, Langfuse |
+| **Việc tiếp theo** | Tuần 4: chạy thật 21 kịch bản bằng Haiku, rồi workflow cố định, gây lỗi tool, Langfuse |
 
 Đây là file duy nhất để theo dõi dự án. Mục 0 dùng để xem nhanh và giữ đúng hướng, các mục sau là thiết kế chi tiết.
 
@@ -672,6 +672,8 @@ forbidden:
 must_mention: [vượt ngân sách]
 ```
 
+**Đã làm (2026-11-11):** `evals/run_scenarios.py` chạy từng kịch bản trên database mới, làm phần `setup`, tự làm các bước con người mỗi khi agent dừng chờ rồi tiếp tục, sau đó `evals/grader.py` chấm từng điều kiện: trạng thái báo cáo, lần dừng đầu, số lời gọi tool, tool bắt buộc và tool bị cấm, nội dung phải có và không được có, các yêu cầu trong báo cáo, và database theo kiểu closed-world. Database và checkpoint của mỗi kịch bản được giữ ở `runs/evals/` để xem lại trace.
+
 Phần `human` khai báo quyết định của người duyệt và câu trả lời của người yêu cầu. Bộ chạy eval dùng phần này để giả lập con người, và câu trả lời vẫn đi qua Quarantined LLM như khi chạy thật.
 
 ### 7.3 Cố tình gây lỗi
@@ -1020,3 +1022,4 @@ Các bài dưới đây của bên thứ ba hoặc nhà cung cấp, chưa đối
 | 2026-11-11 | 1.22 | Xong tuần 3. Chạy thật bằng Haiku 5.5: mục tiêu không có số yêu cầu thì agent báo `blocked` (0,0023 USD); có số yêu cầu thì agent tự đọc 3 PDF, so 2 phương án, gửi duyệt, dừng chờ, rồi ở một tiến trình mới tạo đơn nháp sau khi được duyệt (11 lời gọi tool, 0,0085 USD, chưa bật cache) |
 | 2026-11-11 | 1.23 | Bắt đầu tuần 4: thêm `list_requests`, sửa prompt, bật prompt cache và đếm đúng token ghi cache. Chạy lại câu giao việc không có số yêu cầu: agent tìm được yêu cầu #1 và gửi duyệt sau 8 lần gọi model, 84% token vào đọc từ cache, 0,0028 USD |
 | 2026-11-11 | 1.24 | Viết 21 kịch bản eval ở `evals/scenarios.yaml`. Thêm quy tắc R9 (không gửi lại y nguyên hồ sơ bị từ chối), lưu ảnh chụp hồ sơ trong `approvals.snapshot_json`. 610 test đạt |
+| 2026-11-11 | 1.25 | Viết bộ chạy và chấm kịch bản (`evals/scenarios.py`, `evals/grader.py`, `evals/run_scenarios.py`), kiểm tra bằng model giả trên các kịch bản thật, gồm luồng duyệt, từ chối và hỏi đáp. 630 test đạt. Chưa chạy bằng model thật |
